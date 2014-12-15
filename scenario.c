@@ -22,6 +22,10 @@ scenario_t * scenario_init(int id){
 	srand ( time(NULL) );   // random seed
 
 	switch(s->id){   /* set the function pointer to the scenario */
+		case 0:
+			s->scenario_function = scenario_none;
+			printf("scenario_init: initialized id[%d][none]\n",s->id);
+			break;
 		case 1:
  			s->scenario_function = scenario_random_jitter;
 			printf("scenario_init: initialized id[%d][random_jitter]\n",s->id);

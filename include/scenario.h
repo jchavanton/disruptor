@@ -33,6 +33,8 @@ int scenario_check_pkt(scenario_t * s, int seq, u_int32_t pkt_id);
  * scenario section
  * */
 
+int scenario_none(scenario_t * s, int seq, u_int32_t pkt_id);
+
 int scenario_random_jitter(scenario_t * s, int seq, u_int32_t pkt_id);
 
 int scenario_random_jitter_experiment(scenario_t * s, int seq, u_int32_t pkt_id);

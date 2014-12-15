@@ -16,6 +16,9 @@ static int16_t sc_random(int16_t max) {
 	return ( ( random() % max ) + 1);
 }
 
+int scenario_none(scenario_t * s, int seq, u_int32_t pkt_id){
+	return 0;
+}
 
 /* id 2 */
 int scenario_random_jitter_experiment(scenario_t * s, int seq, u_int32_t pkt_id){

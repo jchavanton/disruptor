@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -12,7 +13,7 @@
 /* packet, scenario and logging */
 
 scenario_t * scenario;
-uint16_t scenario_id = 2;
+uint16_t scenario_id = 0;
 
 typedef struct disrupt_nfq_s {
 	struct nfq_q_handle *qh;	/* Netfilter Queue handle */
@@ -122,7 +123,9 @@ void disruptor_nfq_init() {
 
 void disruptor_nfq_bind() {
 	/* Bind the program to a specific queue */
-	d_nfq.qid = 10;
+	if(!d_nfq.qid){
+		d_nfq.qid=10; /* Default queue id */
+	}
 	printf("binding this socket to queue [%d]\n", d_nfq.qid);
 	d_nfq.qh = nfq_create_queue(d_nfq.h, d_nfq.qid, &disruptor_nfq_call_back, (void *)scenario);
 	if (!d_nfq.qh) {
@@ -147,7 +150,31 @@ void disruptor_nfq_handle_traffic() {
 	}
 }
 
-void main(void){
+void disruptor_command_line_options(int argc, char **argv){
+	int opt;
+	while ((opt = getopt(argc, argv, "hq:s:")) != -1) {
+		switch (opt) {
+			case 'q':
+				d_nfq.qid = atoi(optarg);
+				printf("disruptor_command_line_options: nfq queue id[%d]\n", d_nfq.qid);
+				break;
+			case 's':
+				scenario_id = atoi(optarg);
+				printf("disruptor_command_line_options: scenario id[%d]\n", scenario_id);
+				break;
+			case 'h':
+				printf("-s scenario ID (check scenario.c/scenario.h)\n");
+				printf("-q nfq queue id\n");
+				exit(1);
+				break;
+			default:
+				break;
+		}
+	}
+}
+
+void main(int argc, char **argv){
+	disruptor_command_line_options(argc, argv);
 	scenario = scenario_init(scenario_id);
 	disruptor_nfq_init();
 	disruptor_nfq_bind();
