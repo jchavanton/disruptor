@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -6,16 +7,16 @@
 #include <netinet/ip.h>
 #include <linux/tcp.h>
 #include <linux/udp.h>
-#include "./rtp.h"
+#include <stdbool.h>
+
+#include "include/rtp.h"
+#include "include/scenario.h"
 
 /* packet, scenario and logging */
 
-typedef struct disruptor_pkt_s {
-	uint32_t size;
-	char * net_proto;
-} disruptor_pkt_t;
+scenario_t scenario;
 
-disruptor_pkt_t disruptor_pkt; /* Currently processes packet */
+disrupt_stream_t d_stream; /* Disruptor active stream */
 
 typedef struct disrupt_nfq_s {
 	struct nfq_q_handle *qh;	/* Netfilter Queue handle */
@@ -28,25 +29,25 @@ typedef struct disrupt_nfq_s {
 
 disrupt_nfq_t d_nfq; /* Disruptor Netfilter */
 
-void disrupt_tcp_packet_analisys(unsigned char * payload_transport){
+bool disrupt_tcp_packet_analisys(unsigned char * payload_transport, int32_t pkt_id){
 	struct tcphdr * tcp_header = (struct tcphdr *) payload_transport;
 	unsigned char * payload_app = payload_transport + (tcp_header->doff * 4); /* Data Offset: 4 bits, The number of 32 bit words in the TCP Header. */
 
 	/* SIP DETECTION */
 	if( strncmp( payload_app, "SIP/2.0 ", 8) == 0 ){
 		printf("SIP RESPONSE[%c%c%c]\n", payload_app[8], payload_app[9], payload_app[10]);
-		return;
+		return 1;
 	}
 
 	char *sip_found = strstr(payload_app,"sip:");
 	if(!sip_found) {
 		printf("TCP unknown\n");
-		return;
+		return 1;
 	}
 	int16_t sip_method_len = (unsigned char *)sip_found-payload_app - 1;
-	if(sip_method_len > 30){
+	if(sip_method_len > 10){
 		printf("TCP SIP method not found...\n");
-		return;
+		return 1;
 	}
 	char sip_method[128];
 	strncpy(sip_method, payload_app, sip_method_len);
@@ -54,11 +55,11 @@ void disrupt_tcp_packet_analisys(unsigned char * payload_transport){
 	if( sip_method ){
 		printf("SIP REQUEST[%s]\n", sip_method);
 	}
-	return;
+	return true;
 }
 
-void disrupt_udp_packet_analisys(char * payload_transport){
-	struct udphdr * udp_header = (struct udphdr *) payload_transport;
+bool disrupt_udp_packet_analisys(char * payload_transport, int32_t pkt_id){
+	struct udphdr * udp_hdr = (struct udphdr *) payload_transport;
 	unsigned char * payload_app = payload_transport + sizeof(struct udphdr);
 
 	/* RTP DETECTION */
@@ -67,38 +68,72 @@ void disrupt_udp_packet_analisys(char * payload_transport){
 		uint16_t seq = ntohs(rtp_msg->header.seq);
 		uint32_t ssrc = ntohl(rtp_msg->header.ssrc);
 		uint32_t ts = ntohl(rtp_msg->header.ts);
-		if(seq%100 == 0){
-			printf("RTP version[%d] seq[%d] ts[%d] ssrc[%d]\n", rtp_msg->header.version, seq, ts, ssrc);
-		}
-	}
 
-	return;
+		struct timeval t;
+		gettimeofday(&t,NULL);
+		int32_t stream_duration = (int32_t)(t.tv_sec - d_stream.start.tv_sec);
+		if(seq%100 == 0){
+			printf("RTP version[%d] seq[%d] ts[%d] ssrc[%d] duration[%d]\n", rtp_msg->header.version, seq, ts, ssrc, stream_duration);
+		}
+		/* check scenario : if there is and active scenario is will decide what to do with the packet */
+		return scenario_check_pkt(&scenario, seq, pkt_id, stream_duration);
+	}
+	return true;
 }
 
-void disrupt_ip_packet_analisys(struct nfq_data *nfa) {
+void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
+
+	if( !(ntohs(udp_hdr->source) % 2) &&
+		( (d_stream.dst_ip != ip_hdr->daddr) || (d_stream.src_ip != ip_hdr->saddr) || (d_stream.dst_port != udp_hdr->source) || (d_stream.src_port != udp_hdr->dest) ) ){
+		struct timeval t;
+		gettimeofday(&t,NULL);
+		d_stream.start = t;
+		d_stream.dst_ip = ip_hdr->daddr;
+		d_stream.src_ip = ip_hdr->saddr;
+		d_stream.dst_port = udp_hdr->source;
+		d_stream.src_port = udp_hdr->dest;
+
+		printf("new stream found: src ip:port[%d.%d.%d.%d:%d] dest ip:port[%d.%d.%d.%d:%d] start[%lld]\n",
+			(ip_hdr->saddr>>24)&0xFF, (ip_hdr->saddr>>16)&0xFF, (ip_hdr->saddr>>8)&0xFF, (ip_hdr->saddr)&0xFF,
+			ntohs(udp_hdr->source),
+			(ip_hdr->daddr>>24)&0xFF, (ip_hdr->daddr>>16)&0xFF, (ip_hdr->daddr>>8)&0xFF, (ip_hdr->daddr)&0xFF,
+			ntohs(udp_hdr->dest),
+			(int64_t)d_stream.start.tv_sec
+		);
+
+		scenario_read_xml(&scenario, d_stream);
+	}
+}
+
+bool disrupt_ip_packet_analisys(struct nfq_data *nfa, int32_t pkt_id) {
 	char *payload_data;
 	uint16_t payload_len = nfq_get_payload(nfa, &payload_data);
 	struct iphdr * ip_hdr = (struct iphdr *)(payload_data);
 
 	/* Detect transport protocol */
 	if ( ip_hdr->protocol == IPPROTO_TCP ) {
-		disrupt_tcp_packet_analisys(payload_data + sizeof(struct iphdr));
+		return disrupt_tcp_packet_analisys(payload_data + sizeof(struct iphdr), pkt_id);
 	} else if ( ip_hdr->protocol == IPPROTO_UDP ) {
-		disrupt_udp_packet_analisys(payload_data + sizeof(struct iphdr));
+		disrupt_stream_detection(ip_hdr, (struct udphdr *) (payload_data + sizeof(struct iphdr)) );
+		return disrupt_udp_packet_analisys(payload_data + sizeof(struct iphdr), pkt_id);
 	}
 }
 
 /* Definition of callback function */
-static int disruptor_nfq_call_back(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data)
+int disruptor_nfq_call_back(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data)
 {
-	int16_t verdict = 1;
-	int32_t id;
+	scenario_t * scenario = (scenario_t *) data;
+	int16_t verdict = true;
+	int32_t pkt_id;
 	struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
 	if (ph) {
- 		id = ntohl(ph->packet_id);
+ 		pkt_id = ntohl(ph->packet_id);
 	}
-	disrupt_ip_packet_analisys(nfa);
-	return nfq_set_verdict(qh, id, verdict, 0, NULL); /* Verdict packet */
+	verdict = disrupt_ip_packet_analisys(nfa, pkt_id);
+	if(verdict){
+		nfq_set_verdict(qh, pkt_id, verdict, 0, NULL); /* if scenario is not keeping the packet rwe release it immediatly */
+	}
+	return 1;
 }
 
 void disruptor_nfq_init() {
@@ -122,9 +157,11 @@ void disruptor_nfq_init() {
 
 void disruptor_nfq_bind() {
 	/* Bind the program to a specific queue */
-	d_nfq.qid = 10;
+	if(!d_nfq.qid){
+		d_nfq.qid=10; /* Default queue id */
+	}
 	printf("binding this socket to queue [%d]\n", d_nfq.qid);
-	d_nfq.qh = nfq_create_queue(d_nfq.h, d_nfq.qid, &disruptor_nfq_call_back, &disruptor_pkt);
+	d_nfq.qh = nfq_create_queue(d_nfq.h, d_nfq.qid, &disruptor_nfq_call_back, (void *)&scenario);
 	if (!d_nfq.qh) {
 		fprintf(stderr, "error during nfq_create_queue()\n");
 		exit(1);
@@ -147,8 +184,28 @@ void disruptor_nfq_handle_traffic() {
 	}
 }
 
-void main(void){
+void disruptor_command_line_options(int argc, char **argv){
+	int opt;
+	while ((opt = getopt(argc, argv, "hs:")) != -1) {
+		switch (opt) {
+			case 'q':
+				d_nfq.qid = atoi(optarg);
+				printf("disruptor_command_line_options: nfq queue id[%d]\n", d_nfq.qid);
+				break;
+			case 'h':
+				printf("-q nfq queue id\n");
+				exit(1);
+				break;
+			default:
+				break;
+		}
+	}
+}
+
+void main(int argc, char **argv){
+	disruptor_command_line_options(argc, argv);
 	disruptor_nfq_init();
 	disruptor_nfq_bind();
+	scenario.qh = d_nfq.qh;
 	disruptor_nfq_handle_traffic();
 }

@@ -1,0 +1,6 @@
+
+<scenario>
+   <period duration="10">
+        <action name="jitter"/>
+   </period>
+</scenario>
