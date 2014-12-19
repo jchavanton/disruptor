@@ -16,12 +16,12 @@ static int16_t sc_random(int16_t max) {
 	return ( ( random() % max ) + 1);
 }
 
-int scenario_none(scenario_t * s, int seq, u_int32_t pkt_id){
-	return 0;
+bool scenario_none(scenario_t * s, int seq, u_int32_t pkt_id){
+	return true;
 }
 
 /* id 2 */
-int scenario_random_jitter_experiment(scenario_t * s, int seq, u_int32_t pkt_id){
+bool scenario_random_jitter_experiment(scenario_t * s, int seq, u_int32_t pkt_id){
 	int var_rand = 0;
 	s->counter1++;
 
@@ -54,43 +54,35 @@ int scenario_random_jitter_experiment(scenario_t * s, int seq, u_int32_t pkt_id)
 			s->pb=3;
 
 		printf("random_scenario jitter: queueing seq: %d [%d]\n",seq, s->counter1);
-		return 1; 
+		return false;
 	}
 	else if(s->pb == 3) {  // release the packets
 		u_int32_t pkt_id;
 		int i;
 		for (i=0;i<s->scf_pkt_count;i++){
 			pkt_id = s->queue_packet_ids_delay[i];
-                        printf("random_scenario jitter: delayed packet released seq: %d [%d]\n",s->jitterized_seq_numbers_during_the_call[i], s->counter1);
-	                nfq_set_verdict(s->qh, pkt_id , NF_ACCEPT, 0, NULL);
+			printf("random_scenario jitter: delayed packet released seq: %d [%d]\n",s->jitterized_seq_numbers_during_the_call[i], s->counter1);
+			nfq_set_verdict(s->qh, pkt_id , NF_ACCEPT, 0, NULL);
 		}
 		s->pb=0; //
 		printf("random_scenario jitter: completed [%d]\n" ,s->counter1);
 	}
-	return 0;
+	return true;
 }
 
 
 
 
 /* id 3 */
-int scenario_random_pkt_loss(scenario_t * s, int seq, u_int32_t pkt_id){
+bool scenario_random_pkt_loss(scenario_t * s, int seq, u_int32_t pkt_id){
 	int var_rand = 1;       /* initialize to no problem */
-/*
-	if(seq > 1000 && seq < 1700)
-		return 0;
-
-	if(seq > 3000 && seq < 3500)
-		return 0;
-*/
 	var_rand = sc_random(9);
 	if(var_rand == 0 && s->counter1 < 100){
 		printf("random_scenario: dropping packet with dropcount[%d] seq: %d\n", s->counter1, seq);
 		nfq_set_verdict(s->qh, pkt_id, NF_DROP, 0, NULL);
 		s->counter1++;
-		return 1;
+		return false;
 	}
-		
 /*
 	if(s->scf_pkt_count == 0){
 		var_rand = sc_random(9);
@@ -108,13 +100,13 @@ int scenario_random_pkt_loss(scenario_t * s, int seq, u_int32_t pkt_id){
 	}
 */
 	printf("random_scenario: packet with seq: %d\n",seq);
-	return 0;
+	return true;
 }
 
 
 
 /* id 1 */
-int scenario_random_jitter(scenario_t * s, int seq, u_int32_t pkt_id){
+bool scenario_random_jitter(scenario_t * s, int seq, u_int32_t pkt_id){
 	int var_rand = 0;
 	s->counter1++;
 
@@ -150,7 +142,7 @@ int scenario_random_jitter(scenario_t * s, int seq, u_int32_t pkt_id){
 			s->pb=3;
 
 		printf("random_scenario random_jitter: queueing seq: %d [%d]\n",seq ,s->counter1);
-		return 1;
+		return false;
 	}
 	else if(s->pb == 3) {  // release the packets
 		u_int32_t pkt_id;
@@ -163,6 +155,6 @@ int scenario_random_jitter(scenario_t * s, int seq, u_int32_t pkt_id){
 		s->pb=0; // 
 		printf("random_scenario random_jitter: completed\n");
 	}
-	return 0;
+	return true;
 }
 

@@ -9,6 +9,7 @@
 #include <linux/udp.h>
 #include "include/rtp.h"
 #include "include/scenario.h"
+#include <stdbool.h>
 
 /* packet, scenario and logging */
 
@@ -26,7 +27,7 @@ typedef struct disrupt_nfq_s {
 
 disrupt_nfq_t d_nfq; /* Disruptor Netfilter */
 
-int disrupt_tcp_packet_analisys(unsigned char * payload_transport, int32_t pkt_id){
+bool disrupt_tcp_packet_analisys(unsigned char * payload_transport, int32_t pkt_id){
 	struct tcphdr * tcp_header = (struct tcphdr *) payload_transport;
 	unsigned char * payload_app = payload_transport + (tcp_header->doff * 4); /* Data Offset: 4 bits, The number of 32 bit words in the TCP Header. */
 
@@ -42,7 +43,7 @@ int disrupt_tcp_packet_analisys(unsigned char * payload_transport, int32_t pkt_i
 		return 1;
 	}
 	int16_t sip_method_len = (unsigned char *)sip_found-payload_app - 1;
-	if(sip_method_len > 30){
+	if(sip_method_len > 10){
 		printf("TCP SIP method not found...\n");
 		return 1;
 	}
@@ -52,10 +53,10 @@ int disrupt_tcp_packet_analisys(unsigned char * payload_transport, int32_t pkt_i
 	if( sip_method ){
 		printf("SIP REQUEST[%s]\n", sip_method);
 	}
-	return 1;
+	return true;
 }
 
-int disrupt_udp_packet_analisys(char * payload_transport, int32_t pkt_id){
+bool disrupt_udp_packet_analisys(char * payload_transport, int32_t pkt_id){
 	struct udphdr * udp_header = (struct udphdr *) payload_transport;
 	unsigned char * payload_app = payload_transport + sizeof(struct udphdr);
 
@@ -71,11 +72,10 @@ int disrupt_udp_packet_analisys(char * payload_transport, int32_t pkt_id){
 		/* check scenario : if there is and active scenario is will decide what to do with the packet */
 		return scenario_check_pkt(scenario, seq, pkt_id);
 	}
-
-	return 1;
+	return true;
 }
 
-int disrupt_ip_packet_analisys(struct nfq_data *nfa, int32_t pkt_id) {
+bool disrupt_ip_packet_analisys(struct nfq_data *nfa, int32_t pkt_id) {
 	char *payload_data;
 	uint16_t payload_len = nfq_get_payload(nfa, &payload_data);
 	struct iphdr * ip_hdr = (struct iphdr *)(payload_data);
@@ -89,17 +89,20 @@ int disrupt_ip_packet_analisys(struct nfq_data *nfa, int32_t pkt_id) {
 }
 
 /* Definition of callback function */
-static int disruptor_nfq_call_back(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data)
+int disruptor_nfq_call_back(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data)
 {
 	scenario_t * scenario = (scenario_t *) data;
-	int16_t verdict = 1;
+	int16_t verdict = true;
 	int32_t pkt_id;
 	struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
 	if (ph) {
  		pkt_id = ntohl(ph->packet_id);
 	}
-	verdict = disrupt_ip_packet_analisys(nfa, pkt_id); /* NF_ACCEPT:1 - NF_DROP:0 */
-	return nfq_set_verdict(qh, pkt_id, verdict, 0, NULL); /* Verdict packet */
+	verdict = disrupt_ip_packet_analisys(nfa, pkt_id);
+	if(verdict){
+		nfq_set_verdict(qh, pkt_id, verdict, 0, NULL); /* if scenario is not keeping the packet rwe release it immediatly */
+	}
+	return 1;
 }
 
 void disruptor_nfq_init() {

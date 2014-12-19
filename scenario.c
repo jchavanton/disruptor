@@ -50,7 +50,7 @@ void scenario_set_queue_handle(scenario_t * s, struct nfq_q_handle *qh){
 	s->qh = qh;
 }
 
-int scenario_check_pkt(scenario_t * s, int seq, u_int32_t pkt_id){
+bool scenario_check_pkt(scenario_t * s, int seq, u_int32_t pkt_id){
 	if(s == NULL || s->scenario_function == NULL)
 		return 0;
 	return s->scenario_function(s,seq,pkt_id);
