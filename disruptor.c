@@ -10,11 +10,21 @@
 #include "include/rtp.h"
 #include "include/scenario.h"
 #include <stdbool.h>
-
 /* packet, scenario and logging */
+
 
 scenario_t * scenario;
 uint16_t scenario_id = 0;
+
+typedef struct disrupt_stream_s { /* UDP stream detected */
+	uint16_t src_port;
+	uint16_t dst_port;
+	uint32_t src_ip;
+	uint32_t dst_ip;
+	time_t start;
+} disrupt_stream_t;
+
+disrupt_stream_t d_stream; /* Disruptor active stream */
 
 typedef struct disrupt_nfq_s {
 	struct nfq_q_handle *qh;	/* Netfilter Queue handle */
@@ -57,7 +67,7 @@ bool disrupt_tcp_packet_analisys(unsigned char * payload_transport, int32_t pkt_
 }
 
 bool disrupt_udp_packet_analisys(char * payload_transport, int32_t pkt_id){
-	struct udphdr * udp_header = (struct udphdr *) payload_transport;
+	struct udphdr * udp_hdr = (struct udphdr *) payload_transport;
 	unsigned char * payload_app = payload_transport + sizeof(struct udphdr);
 
 	/* RTP DETECTION */
@@ -75,6 +85,25 @@ bool disrupt_udp_packet_analisys(char * payload_transport, int32_t pkt_id){
 	return true;
 }
 
+void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
+	//printf("disrupt_stream_detection [%d][%d]\n", ntohs(udp_hdr->source), ntohs(udp_hdr->source)%2);
+
+	if( !(ntohs(udp_hdr->source) % 2) &&
+		( (d_stream.dst_ip != ip_hdr->daddr) || (d_stream.src_ip != ip_hdr->saddr) || (d_stream.dst_port != udp_hdr->source) || (d_stream.src_port != udp_hdr->dest) ) ){
+
+		d_stream.dst_ip = ip_hdr->daddr;
+		d_stream.src_ip = ip_hdr->saddr;
+		d_stream.dst_port = udp_hdr->source;
+		d_stream.src_port = udp_hdr->dest;
+		printf("new stream found: src ip:port[%d.%d.%d.%d:%d] dest ip:port[%d.%d.%d.%d:%d]\n",
+			(ip_hdr->saddr>>24)&0xFF, (ip_hdr->saddr>>16)&0xFF, (ip_hdr->saddr>>8)&0xFF, (ip_hdr->saddr)&0xFF,
+			ntohs(udp_hdr->source),
+			(ip_hdr->daddr>>24)&0xFF, (ip_hdr->daddr>>16)&0xFF, (ip_hdr->daddr>>8)&0xFF, (ip_hdr->daddr)&0xFF,
+			ntohs(udp_hdr->dest)
+		);
+	}
+}
+
 bool disrupt_ip_packet_analisys(struct nfq_data *nfa, int32_t pkt_id) {
 	char *payload_data;
 	uint16_t payload_len = nfq_get_payload(nfa, &payload_data);
@@ -84,6 +113,7 @@ bool disrupt_ip_packet_analisys(struct nfq_data *nfa, int32_t pkt_id) {
 	if ( ip_hdr->protocol == IPPROTO_TCP ) {
 		return disrupt_tcp_packet_analisys(payload_data + sizeof(struct iphdr), pkt_id);
 	} else if ( ip_hdr->protocol == IPPROTO_UDP ) {
+		disrupt_stream_detection(ip_hdr, (struct udphdr *) (payload_data + sizeof(struct iphdr)) );
 		return disrupt_udp_packet_analisys(payload_data + sizeof(struct iphdr), pkt_id);
 	}
 }

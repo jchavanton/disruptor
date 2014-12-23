@@ -70,15 +70,12 @@ bool scenario_random_jitter_experiment(scenario_t * s, int seq, u_int32_t pkt_id
 	return true;
 }
 
-
-
-
 /* id 3 */
 bool scenario_random_pkt_loss(scenario_t * s, int seq, u_int32_t pkt_id){
 	int var_rand = 1;       /* initialize to no problem */
 	var_rand = sc_random(9);
-	if(var_rand == 0 && s->counter1 < 100){
-		printf("random_scenario: dropping packet with dropcount[%d] seq: %d\n", s->counter1, seq);
+	if(var_rand == 1 && s->counter1 < 10000){
+		printf("scenario_random_pkt_loss: dropping packet with dropcount[%d] seq: %d\n", s->counter1, seq);
 		nfq_set_verdict(s->qh, pkt_id, NF_DROP, 0, NULL);
 		s->counter1++;
 		return false;
@@ -99,7 +96,7 @@ bool scenario_random_pkt_loss(scenario_t * s, int seq, u_int32_t pkt_id){
 		s->scf_pkt_count = 0;
 	}
 */
-	printf("random_scenario: packet with seq: %d\n",seq);
+	printf("scenario_random_pkt_loss: packet with seq: %d\n",seq);
 	return true;
 }
 
