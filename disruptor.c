@@ -7,22 +7,14 @@
 #include <netinet/ip.h>
 #include <linux/tcp.h>
 #include <linux/udp.h>
+#include <stdbool.h>
+
 #include "include/rtp.h"
 #include "include/scenario.h"
-#include <stdbool.h>
+
 /* packet, scenario and logging */
 
-
-scenario_t * scenario;
-uint16_t scenario_id = 0;
-
-typedef struct disrupt_stream_s { /* UDP stream detected */
-	uint16_t src_port;
-	uint16_t dst_port;
-	uint32_t src_ip;
-	uint32_t dst_ip;
-	time_t start;
-} disrupt_stream_t;
+scenario_t scenario;
 
 disrupt_stream_t d_stream; /* Disruptor active stream */
 
@@ -76,31 +68,40 @@ bool disrupt_udp_packet_analisys(char * payload_transport, int32_t pkt_id){
 		uint16_t seq = ntohs(rtp_msg->header.seq);
 		uint32_t ssrc = ntohl(rtp_msg->header.ssrc);
 		uint32_t ts = ntohl(rtp_msg->header.ts);
+
+		struct timeval t;
+		gettimeofday(&t,NULL);
+		int32_t stream_duration = (int32_t)(t.tv_sec - d_stream.start.tv_sec);
 		if(seq%100 == 0){
-			printf("RTP version[%d] seq[%d] ts[%d] ssrc[%d]\n", rtp_msg->header.version, seq, ts, ssrc);
+			printf("RTP version[%d] seq[%d] ts[%d] ssrc[%d] duration[%d]\n", rtp_msg->header.version, seq, ts, ssrc, stream_duration);
 		}
 		/* check scenario : if there is and active scenario is will decide what to do with the packet */
-		return scenario_check_pkt(scenario, seq, pkt_id);
+		return scenario_check_pkt(&scenario, seq, pkt_id, stream_duration);
 	}
 	return true;
 }
 
 void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
-	//printf("disrupt_stream_detection [%d][%d]\n", ntohs(udp_hdr->source), ntohs(udp_hdr->source)%2);
 
 	if( !(ntohs(udp_hdr->source) % 2) &&
 		( (d_stream.dst_ip != ip_hdr->daddr) || (d_stream.src_ip != ip_hdr->saddr) || (d_stream.dst_port != udp_hdr->source) || (d_stream.src_port != udp_hdr->dest) ) ){
-
+		struct timeval t;
+		gettimeofday(&t,NULL);
+		d_stream.start = t;
 		d_stream.dst_ip = ip_hdr->daddr;
 		d_stream.src_ip = ip_hdr->saddr;
 		d_stream.dst_port = udp_hdr->source;
 		d_stream.src_port = udp_hdr->dest;
-		printf("new stream found: src ip:port[%d.%d.%d.%d:%d] dest ip:port[%d.%d.%d.%d:%d]\n",
+
+		printf("new stream found: src ip:port[%d.%d.%d.%d:%d] dest ip:port[%d.%d.%d.%d:%d] start[%lld]\n",
 			(ip_hdr->saddr>>24)&0xFF, (ip_hdr->saddr>>16)&0xFF, (ip_hdr->saddr>>8)&0xFF, (ip_hdr->saddr)&0xFF,
 			ntohs(udp_hdr->source),
 			(ip_hdr->daddr>>24)&0xFF, (ip_hdr->daddr>>16)&0xFF, (ip_hdr->daddr>>8)&0xFF, (ip_hdr->daddr)&0xFF,
-			ntohs(udp_hdr->dest)
+			ntohs(udp_hdr->dest),
+			(int64_t)d_stream.start.tv_sec
 		);
+
+		scenario_read_xml(&scenario, d_stream);
 	}
 }
 
@@ -160,7 +161,7 @@ void disruptor_nfq_bind() {
 		d_nfq.qid=10; /* Default queue id */
 	}
 	printf("binding this socket to queue [%d]\n", d_nfq.qid);
-	d_nfq.qh = nfq_create_queue(d_nfq.h, d_nfq.qid, &disruptor_nfq_call_back, (void *)scenario);
+	d_nfq.qh = nfq_create_queue(d_nfq.h, d_nfq.qid, &disruptor_nfq_call_back, (void *)&scenario);
 	if (!d_nfq.qh) {
 		fprintf(stderr, "error during nfq_create_queue()\n");
 		exit(1);
@@ -185,18 +186,13 @@ void disruptor_nfq_handle_traffic() {
 
 void disruptor_command_line_options(int argc, char **argv){
 	int opt;
-	while ((opt = getopt(argc, argv, "hq:s:")) != -1) {
+	while ((opt = getopt(argc, argv, "hs:")) != -1) {
 		switch (opt) {
 			case 'q':
 				d_nfq.qid = atoi(optarg);
 				printf("disruptor_command_line_options: nfq queue id[%d]\n", d_nfq.qid);
 				break;
-			case 's':
-				scenario_id = atoi(optarg);
-				printf("disruptor_command_line_options: scenario id[%d]\n", scenario_id);
-				break;
 			case 'h':
-				printf("-s scenario ID (check scenario.c/scenario.h)\n");
 				printf("-q nfq queue id\n");
 				exit(1);
 				break;
@@ -208,9 +204,8 @@ void disruptor_command_line_options(int argc, char **argv){
 
 void main(int argc, char **argv){
 	disruptor_command_line_options(argc, argv);
-	scenario = scenario_init(scenario_id);
 	disruptor_nfq_init();
 	disruptor_nfq_bind();
-	scenario_set_queue_handle(scenario, d_nfq.qh);
+	scenario.qh = d_nfq.qh;
 	disruptor_nfq_handle_traffic();
 }
