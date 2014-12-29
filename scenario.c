@@ -8,16 +8,17 @@
 #include "ezxml/ezxml.h"
 
 void scenario_init(scenario_t *s){
-	const int qmax_pkt = Q_MAX_PKT;
-	//s = (scenario_t *)malloc(sizeof(scenario_t));
-	s->jitterized_seq_numbers_during_the_call = malloc(sizeof(unsigned int) * qmax_pkt);
-	s->queue_packet_ids_delay = malloc(sizeof(unsigned int) * qmax_pkt);
-	s->pb = 0;              // starting without active problem
-	s->pb_seq_pos = 0;
-	s->pb_seq_start = 0;
-	s->scf_pkt_count = 0;
-	s->counter1=0;
-	s->counter2=0;
+	if(!s->queue_seq){
+		s->queue_seq = malloc(sizeof(unsigned int) *  q_max_pkt);
+	}
+	if(!s->queue_delay){
+		s->queue_delay = malloc(sizeof(unsigned int) *  q_max_pkt);
+	}
+	s->pb_state = PB_NONE;              // starting without active problem
+	s->pb_pkt_pos = 0;
+	s->pb_pkt_start = 0;
+	s->pb_pkt_max = 0;
+	s->period_pkt_count = 0;
 	srand ( time(NULL) );   // random seed
 }
 
@@ -45,18 +46,22 @@ void scenario_read_xml(scenario_t * s, disrupt_stream_t d_stream) {
 		period_duration = ezxml_attr(period, "duration");
 		for (action = ezxml_child(period, "action"); action; action = action->next) {
 			action_name = ezxml_attr(action, "name");
+			break;
 		}
 	}
 	//ezxml_free(scenario_xml);
 
-	printf("scenario_read_xml: period[%s] action[%s]\n", period_duration, action_name);
+	printf("scenario_read_xml: period[%ss] action[%s]", period_duration, action_name);
 	if(strcasecmp(action_name,"jitter") == 0){
 		s->action = JITTER;
+		s->init_max_burst = atoi(ezxml_attr(action, "max"));
+		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
+		printf(" max_burst[%d] random_occurence[%d]", s->init_max_burst, s->init_random_occurence);
 	} else {
 		s->action = NONE;
 	}
 	s->duration = atoi(period_duration);
-	printf("scenario_read_xml: period[%d] action[%d]\n", s->duration, s->action);
+	printf("\n");
 	s->d_stream=d_stream;
 	scenario_init(s);
 	scenario_set_action(s);

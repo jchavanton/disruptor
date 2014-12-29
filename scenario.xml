@@ -1,6 +1,13 @@
+<?xml version="1.0"?>
 
+<!-- example with 10 seconds of jitter -->
 <scenario>
-   <period duration="10">
-        <action name="jitter"/>
-   </period>
+       <period duration="10">
+                <!--
+                     simulate jitter caused by "congestion" resulting in random delayed packets burst
+                     rand: percentage of chances that a problem occurence start at each packet
+                     max: maximum burst size in packets
+                -->
+                <action name="jitter" rand="50" max="10"/>
+        </period>
 </scenario>

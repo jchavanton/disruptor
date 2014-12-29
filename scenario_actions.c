@@ -3,11 +3,10 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <libnetfilter_queue/libnetfilter_queue.h> 
+#include <libnetfilter_queue/libnetfilter_queue.h>
 #include <netinet/in.h>
 #include <linux/netfilter.h>
 
-#define SC_DELAYED_PKT 15
 
 static int16_t sc_random(int16_t max) {
 	struct timeval t;
@@ -20,48 +19,49 @@ bool scenario_action_none(scenario_t * s, int seq, u_int32_t pkt_id){
 	return true;
 }
 
-bool scenario_action_jitter(scenario_t * s, int seq, u_int32_t pkt_id){
-	int var_rand = 0;
-	s->counter1++;
+bool scenario_action_jitter(scenario_t * s, int seq, uint32_t pkt_id){
+	int16_t var_rand = 0;
+	s->period_pkt_count++;
 
-	if(s->pb==0) {
-		var_rand = sc_random(50) % 50;
-	}
-	else{
-		var_rand = 1;
-	}
-	if ( (var_rand==0) && (s->pb==0) ) {   // scenario random occurance
-		s->pb = 1;
+	if(s->pb_state == PB_NONE) {
+		var_rand = sc_random(s->init_random_occurence);
 	}
 
-	if(s->pb == 0)
-		printf("scenario_action[jitter]: no problem seq: %d [%d]\n",seq , s->counter1);
-
-	if(s->pb == 1){ // initialization
-		s->pb_seq_pos = 0;
-		s->pb_seq_start = seq;
-		s->pb = 2;
-		s->scf_pkt_count = rand() % 120 +1; // in this scenario this is a random amount of packet delayed emulate congestion
-		printf("scenario_action[jitter]: initialized affecting[%d]pkt[%d]\n",s->scf_pkt_count, s->counter1);
+	if ( (var_rand==1) && (s->pb_state == PB_NONE) ) {   // scenario random occurance
+		s->pb_state = PB_INIT;
 	}
-	if(s->pb == 2){ // pb is initialized, start queing packets
-		s->queue_packet_ids_delay[s->pb_seq_pos]=pkt_id;
-		s->jitterized_seq_numbers_during_the_call[s->pb_seq_pos]=seq;
-		s->pb_seq_pos++;
-		if(s->pb_seq_pos == s->scf_pkt_count)
-			s->pb=3;
-		printf("scenario_action[jitter]: queueing seq: %d [%d]\n",seq, s->counter1);
+
+	if(s->pb_state == PB_NONE) {
+		printf("scenario_action[jitter]: no problem pkt_id[%d] seq[%d] period_cnt[%d]\n", pkt_id, seq , s->period_pkt_count);
+	} else if(s->pb_state == PB_INIT) {
+		s->pb_pkt_pos = 0;
+		s->pb_pkt_start = s->period_pkt_count;
+		s->pb_state = PB_ACTIVE;
+		s->pb_pkt_max = sc_random(s->init_max_burst); // in this scenario this is a random amount of packet delayed emulate congestion
+		printf("scenario_action[jitter]: problem initialized affecting[%d] packets \n",s->pb_pkt_max);
+	}
+
+	if(s->pb_state == PB_ACTIVE){ // pb is initialized, start queing packets
+		s->queue_delay[s->pb_pkt_pos] = pkt_id;
+		s->queue_seq[s->pb_pkt_pos] = seq;
+
+		printf("scenario_action[jitter]: queueing[%d/%d] pkt_id[%d] seq[%d] period_cnt[%d]\n", s->pb_pkt_pos, s->pb_pkt_max, pkt_id, seq, s->period_pkt_count);
+		if(s->pb_pkt_pos == s->pb_pkt_max){
+			s->pb_state = PB_STOP;
+		} else {
+			s->pb_pkt_pos++;
+		}
 		return false;
-	}
-	else if(s->pb == 3) {  // release the packets
-		u_int32_t pkt_id;
+	} else if(s->pb_state == PB_STOP) {  // release the packets
+		uint32_t pkt_id;
 		int i;
-		for (i=0;i<s->scf_pkt_count;i++){
-			pkt_id = s->queue_packet_ids_delay[i];
-			printf("scenario_action[jitter]: delayed packet released seq: %d [%d]\n",s->jitterized_seq_numbers_during_the_call[i], s->counter1);
+		for (i=0;i<=s->pb_pkt_pos;i++){
+			pkt_id = s->queue_delay[i];
+			printf("scenario_action[jitter]: release delayed packet[%d/%d] id[%d] seq[%d] period_cnt[%d]\n", i, s->pb_pkt_max, pkt_id, s->queue_seq[i], s->period_pkt_count);
 			nfq_set_verdict(s->qh, pkt_id , NF_ACCEPT, 0, NULL);
 		}
-		s->pb=0;
+		s->pb_state = PB_NONE;
 	}
+
 	return true;
 }
