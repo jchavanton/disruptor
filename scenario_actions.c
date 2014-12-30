@@ -19,6 +19,18 @@ bool scenario_action_none(scenario_t * s, int seq, u_int32_t pkt_id){
 	return true;
 }
 
+bool scenario_action_loss(scenario_t * s, int seq, uint32_t pkt_id){
+	int16_t var_rand = 0;
+	s->period_pkt_count++;
+	var_rand = sc_random(100);
+	if( var_rand <= s->init_random_occurence ){
+		printf("random_scenario[loss]: dropping pkt_id[%d] seq[%d]\n", pkt_id, seq);
+		nfq_set_verdict(s->qh, pkt_id, NF_DROP, 0, NULL);
+		return false;
+	}
+	return true;
+}
+
 bool scenario_action_jitter(scenario_t * s, int seq, uint32_t pkt_id){
 	int16_t var_rand = 0;
 	s->period_pkt_count++;

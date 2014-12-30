@@ -9,8 +9,9 @@
 static const int32_t q_max_pkt = 10000; // max packet queue size for the scenario
 
 enum scenario_action_e {
-	NONE,
-	JITTER
+	A_NONE,
+	A_JITTER,
+	A_LOSS
 };
 
 enum scenario_problem_state_e {
@@ -63,5 +64,6 @@ bool scenario_check_pkt(scenario_t * s, uint16_t seq, uint32_t pkt_id, int32_t s
 
 bool scenario_action_none(scenario_t * s, int seq, u_int32_t pkt_id);
 bool scenario_action_jitter(scenario_t * s, int seq, u_int32_t pkt_id);
+bool scenario_action_loss(scenario_t * s, int seq, u_int32_t pkt_id);
 
 #endif

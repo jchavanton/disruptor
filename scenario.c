@@ -24,11 +24,14 @@ void scenario_init(scenario_t *s){
 
 void scenario_set_action(scenario_t * s){
 	switch(s->action){   /* set the function pointer to the action */
-		case NONE:
+		case A_NONE:
 			s->scenario_action = scenario_action_none;
 			break;
-		case JITTER:
+		case A_JITTER:
  			s->scenario_action = scenario_action_jitter;
+			break;
+		case A_LOSS:
+			s->scenario_action = scenario_action_loss;
 			break;
 		default :
 			s->scenario_action = NULL;
@@ -53,12 +56,16 @@ void scenario_read_xml(scenario_t * s, disrupt_stream_t d_stream) {
 
 	printf("scenario_read_xml: period[%ss] action[%s]", period_duration, action_name);
 	if(strcasecmp(action_name,"jitter") == 0){
-		s->action = JITTER;
+		s->action = A_JITTER;
 		s->init_max_burst = atoi(ezxml_attr(action, "max"));
 		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
 		printf(" max_burst[%d] random_occurence[%d]", s->init_max_burst, s->init_random_occurence);
+	} else if(strcasecmp(action_name,"loss") == 0){
+		s->action = A_LOSS;
+		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
+		printf(" percentage[%d]", s->init_random_occurence);
 	} else {
-		s->action = NONE;
+		s->action = A_NONE;
 	}
 	s->duration = atoi(period_duration);
 	printf("\n");
