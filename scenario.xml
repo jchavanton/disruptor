@@ -3,13 +3,16 @@
 
 <scenario>
        <!-- example with 30 seconds of jitter -->
-       <period duration="60">
+       <period duration="5">
                 <!--
                      simulate jitter caused by "congestion" resulting in random delayed packets burst
                      rand: percentage of chances that a problem occurrence start at each packet
                      max: maximum burst size in packets
                 -->
                 <!--<action name="jitter" rand="50" max="200"/>-->
-                <action name="loss" rand="20"/>
+                <action name="loss" rand="15"/>
+       </period>
+       <period duration="30">
+                <action name="loss" rand="5"/>
         </period>
 </scenario>

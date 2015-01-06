@@ -1,6 +1,6 @@
 #include <libnetfilter_queue/libnetfilter_queue.h>
 #include <stdbool.h>
-
+#include "../ezxml/ezxml.h"
 #include "stream.h"
 
 #ifndef SCENARIO_FILE_H
@@ -22,6 +22,7 @@ enum scenario_problem_state_e {
 };
 
 typedef struct scenario_s {
+	ezxml_t scenario_period_xml;
 	enum scenario_problem_state_e pb_state; // state of the problem taking place
 	int32_t pb_pkt_pos;			// current seq id in the problem
 	int32_t pb_pkt_start;			// seq id when starting a problem
@@ -41,13 +42,18 @@ typedef struct scenario_s {
 	// int counter2;		// generic purpose counter
 	/// REFACTOR NEW ---
 	enum scenario_action_e action;
-	int16_t duration;
+	int16_t period_start;
+	int16_t period_duration;
 	disrupt_stream_t d_stream;
 } scenario_t;
 
 
 /* initialize the scenario */
 void scenario_init(scenario_t *);
+void scenario_init_xml(scenario_t * s, disrupt_stream_t d_stream);
+bool scenario_read_period_xml(scenario_t * s, int32_t stream_duration);
+
+
 
 /* set the netfilter queue handle in the scenario */
 void scenario_set_queue_handle(scenario_t * s, struct nfq_q_handle *qh);

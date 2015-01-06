@@ -101,7 +101,7 @@ void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 			(int64_t)d_stream.start.tv_sec
 		);
 
-		scenario_read_xml(&scenario, d_stream);
+		scenario_init_xml(&scenario, d_stream);
 	}
 }
 

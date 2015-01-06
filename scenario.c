@@ -14,6 +14,9 @@ void scenario_init(scenario_t *s){
 	if(!s->queue_delay){
 		s->queue_delay = malloc(sizeof(unsigned int) *  q_max_pkt);
 	}
+}
+
+void scenario_period_init(scenario_t *s){
 	s->pb_state = PB_NONE;              // starting without active problem
 	s->pb_pkt_pos = 0;
 	s->pb_pkt_start = 0;
@@ -40,17 +43,34 @@ void scenario_set_action(scenario_t * s){
 	return;
 }
 
-void scenario_read_xml(scenario_t * s, disrupt_stream_t d_stream) {
-	ezxml_t scenario_xml = ezxml_parse_file("scenario.xml"), period, action;
+void scenario_init_xml(scenario_t * s, disrupt_stream_t d_stream) {
+	printf("scenario_init_xml\n");
+	ezxml_t scenario_xml = ezxml_parse_file("scenario.xml");
+	s->scenario_period_xml = ezxml_child(scenario_xml, "period");
+	s->d_stream=d_stream;
+	scenario_init(s);
+	scenario_read_period_xml(s,0);
+	return;
+}
+
+bool scenario_read_period_xml(scenario_t * s, int32_t stream_duration) {
+	ezxml_t action;
 	const char *action_name;
 	const char *period_duration;
 
-	for (period = ezxml_child(scenario_xml, "period"); period; period = period->next) {
-		period_duration = ezxml_attr(period, "duration");
-		for (action = ezxml_child(period, "action"); action; action = action->next) {
+	if(s->scenario_period_xml) {
+		period_duration = ezxml_attr(s->scenario_period_xml, "duration");
+		for (action = ezxml_child(s->scenario_period_xml, "action"); action; action = action->next) {
 			action_name = ezxml_attr(action, "name");
 			break;
 		}
+		s->period_start = stream_duration;
+		s->period_duration = atoi(period_duration);
+		scenario_period_init(s);
+		s->scenario_period_xml = s->scenario_period_xml->next;
+	} else {
+		printf("scenario_read_period_xml: no period found.\n");
+		return false;
 	}
 	//ezxml_free(scenario_xml);
 
@@ -67,22 +87,21 @@ void scenario_read_xml(scenario_t * s, disrupt_stream_t d_stream) {
 	} else {
 		s->action = A_NONE;
 	}
-	s->duration = atoi(period_duration);
 	printf("\n");
-	s->d_stream=d_stream;
-	scenario_init(s);
 	scenario_set_action(s);
-	return;
+	return true;
 }
 
 bool scenario_check_pkt(scenario_t * s, uint16_t seq, uint32_t pkt_id, int32_t stream_duration){
 	if(s == NULL || s->scenario_action == NULL)
 		return true;
-	if(s->duration <= stream_duration){ /* todo select next action ... */
-		printf("scenario period completed...[%d][%d]\n", s->duration, stream_duration);
-		//s->action=NONE;
-		//scenario_set_action(s);
-		s->scenario_action = NULL;
+	if( stream_duration - s->period_start >= s->period_duration){
+		printf("scenario period completed...[%ds]to[%ds]\n", s->period_start, stream_duration);
+		if(!scenario_read_period_xml(s, stream_duration)) {
+			//s->action=NONE;
+			//scenario_set_action(s);
+			s->scenario_action = NULL;
+		}
 		return true;
 	}
 	return s->scenario_action(s,seq,pkt_id);
