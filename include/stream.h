@@ -1,9 +1,11 @@
 
-typedef struct disrupt_stream_s { /* UDP stream detected */
-	uint16_t src_port;
-	uint16_t dst_port;
-	uint32_t src_ip;
-	uint32_t dst_ip;
-	struct timeval start;
-} disrupt_stream_t;
 
+
+#ifndef STREAM_FILE_H
+#define STREAM_FILE_H
+
+#include "scenario.h"
+
+
+
+#endif

@@ -1,10 +1,11 @@
+
+#ifndef SCENARIO_FILE_H
+#define SCENARIO_FILE_H
+
 #include <libnetfilter_queue/libnetfilter_queue.h>
 #include <stdbool.h>
 #include "../ezxml/ezxml.h"
 #include "stream.h"
-
-#ifndef SCENARIO_FILE_H
-#define SCENARIO_FILE_H
 
 static const int32_t q_max_pkt = 10000; // max packet queue size for the scenario
 
@@ -21,7 +22,8 @@ enum scenario_problem_state_e {
 	PB_STOP
 };
 
-typedef struct scenario_s {
+struct scenario_s {
+	ezxml_t scenario_xml;
 	ezxml_t scenario_period_xml;
 	enum scenario_problem_state_e pb_state; // state of the problem taking place
 	int32_t pb_pkt_pos;			// current seq id in the problem
@@ -29,47 +31,54 @@ typedef struct scenario_s {
 	int32_t pb_pkt_max;
 	int16_t init_random_occurence;		// chance of the problem taking place for each packet
 	int16_t init_max_burst;			// max size of packet burst
-	//unsigned int *queue_packet_ids_delay;
 	int32_t *queue_delay;			// packet currently delayed are queued here
 	int32_t *queue_seq;			// sequence number of packet in the queue (when using RTP in clear)
-	struct nfq_q_handle *qh; 	// struct nfq_q_handle *qh
-	bool (*scenario_action)(struct scenario_s * s, int seq, u_int32_t pkt_id); 
-	//bool (*scenario_fuction)(struct scenario_s * s, int seq, u_int32_t pkt_id); 
-
-	//int scf_pkt_count;     // scenario variable that can be used to count packets       
-	int32_t period_pkt_count; // packet count during this period
-	//int counter1;		// generic purpose counter
-	// int counter2;		// generic purpose counter
-	/// REFACTOR NEW ---
+	struct nfq_q_handle *qh;		// struct nfq_q_handle *qh
+	bool (*scenario_action)(struct scenario_s * s, int seq, u_int32_t pkt_id);
+	int32_t period_pkt_count;		// packet count during this period
 	enum scenario_action_e action;
 	int16_t period_start;
 	int16_t period_duration;
-	disrupt_stream_t d_stream;
-} scenario_t;
+};
 
+struct disrupt_socket_s {
+	uint16_t src_port;
+	uint16_t dst_port;
+	uint32_t src_ip;
+	uint32_t dst_ip;
+};
+
+struct disrupt_stream_s {
+	struct disrupt_socket_s socket;
+	struct scenario_s scenario;
+	struct timeval start;
+	struct disrupt_stream_s *previous;
+	struct disrupt_stream_s *next;
+};
+
+struct disrupt_stream_s * stream_get(struct disrupt_stream_s * stream_head, uint32_t src_ip, uint16_t src_port, uint32_t dst_ip, uint16_t dst_port);
+struct disrupt_stream_s * stream_add(struct disrupt_stream_s * stream_head, uint32_t src_ip, uint16_t src_port, uint32_t dst_ip, uint16_t dst_port);
 
 /* initialize the scenario */
-void scenario_init(scenario_t *);
-void scenario_init_xml(scenario_t * s, disrupt_stream_t d_stream);
-bool scenario_read_period_xml(scenario_t * s, int32_t stream_duration);
-
-
+void scenario_init(struct scenario_s *);
+void scenario_init_xml(struct disrupt_stream_s * stream);
+bool scenario_read_period_xml(struct scenario_s * s, int32_t stream_duration);
 
 /* set the netfilter queue handle in the scenario */
-void scenario_set_queue_handle(scenario_t * s, struct nfq_q_handle *qh);
+void scenario_set_queue_handle(struct scenario_s * s, struct nfq_q_handle *qh);
 
 /* run scenario on this packet 
  * return false if the packet is stored in the scenario telling the core to return
  * return true if the packet is not touched by the scenario 
  * */
-bool scenario_check_pkt(scenario_t * s, uint16_t seq, uint32_t pkt_id, int32_t stream_duration);
+bool scenario_check_pkt(struct scenario_s * s, uint16_t seq, uint32_t pkt_id, int32_t stream_duration);
 
 /*
  * scenario section
  * */
 
-bool scenario_action_none(scenario_t * s, int seq, u_int32_t pkt_id);
-bool scenario_action_jitter(scenario_t * s, int seq, u_int32_t pkt_id);
-bool scenario_action_loss(scenario_t * s, int seq, u_int32_t pkt_id);
+bool scenario_action_none(struct scenario_s * s, int seq, u_int32_t pkt_id);
+bool scenario_action_jitter(struct scenario_s * s, int seq, u_int32_t pkt_id);
+bool scenario_action_loss(struct scenario_s * s, int seq, u_int32_t pkt_id);
 
 #endif

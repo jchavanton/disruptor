@@ -14,9 +14,9 @@
 
 /* packet, scenario and logging */
 
-scenario_t scenario;
-
-disrupt_stream_t d_stream; /* Disruptor active stream */
+struct scenario_s *scenario;
+struct disrupt_stream_s *stream_head;
+struct disrupt_stream_s *stream;
 
 typedef struct disrupt_nfq_s {
 	struct nfq_q_handle *qh;	/* Netfilter Queue handle */
@@ -71,37 +71,31 @@ bool disrupt_udp_packet_analisys(char * payload_transport, int32_t pkt_id){
 
 		struct timeval t;
 		gettimeofday(&t,NULL);
-		int32_t stream_duration = (int32_t)(t.tv_sec - d_stream.start.tv_sec);
+		int32_t stream_duration = (int32_t)(t.tv_sec - stream->start.tv_sec);
 		if(seq%100 == 0){
 			printf("RTP version[%d] seq[%d] ts[%d] ssrc[%d] duration[%d]\n", rtp_msg->header.version, seq, ts, ssrc, stream_duration);
 		}
 		/* check scenario : if there is and active scenario is will decide what to do with the packet */
-		return scenario_check_pkt(&scenario, seq, pkt_id, stream_duration);
+		return scenario_check_pkt(&stream->scenario, seq, pkt_id, stream_duration);
 	}
 	return true;
 }
 
 void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 
-	if( !(ntohs(udp_hdr->source) % 2) &&
-		( (d_stream.dst_ip != ip_hdr->daddr) || (d_stream.src_ip != ip_hdr->saddr) || (d_stream.dst_port != udp_hdr->source) || (d_stream.src_port != udp_hdr->dest) ) ){
-		struct timeval t;
-		gettimeofday(&t,NULL);
-		d_stream.start = t;
-		d_stream.dst_ip = ip_hdr->daddr;
-		d_stream.src_ip = ip_hdr->saddr;
-		d_stream.dst_port = udp_hdr->source;
-		d_stream.src_port = udp_hdr->dest;
-
-		printf("new stream found: src ip:port[%d.%d.%d.%d:%d] dest ip:port[%d.%d.%d.%d:%d] start[%lld]\n",
-			(ip_hdr->saddr>>24)&0xFF, (ip_hdr->saddr>>16)&0xFF, (ip_hdr->saddr>>8)&0xFF, (ip_hdr->saddr)&0xFF,
-			ntohs(udp_hdr->source),
-			(ip_hdr->daddr>>24)&0xFF, (ip_hdr->daddr>>16)&0xFF, (ip_hdr->daddr>>8)&0xFF, (ip_hdr->daddr)&0xFF,
-			ntohs(udp_hdr->dest),
-			(int64_t)d_stream.start.tv_sec
-		);
-
-		scenario_init_xml(&scenario, d_stream);
+	if( !(ntohs(udp_hdr->source) % 2) ){
+		stream = stream_get(stream_head, ip_hdr->saddr, udp_hdr->source, ip_hdr->daddr, udp_hdr->dest);
+		if( !stream ){
+			stream = stream_head = stream_add(stream_head, ip_hdr->saddr, udp_hdr->source, ip_hdr->daddr, udp_hdr->dest);
+			stream->scenario.qh = d_nfq.qh;
+			struct timeval t;
+			gettimeofday(&t,NULL);
+			stream->start = t;
+			scenario_init_xml(stream);
+			printf("********** new stream *********\n");
+			stream_print(stream_head);
+			printf("*******************************\n");
+		}
 	}
 }
 
@@ -122,7 +116,8 @@ bool disrupt_ip_packet_analisys(struct nfq_data *nfa, int32_t pkt_id) {
 /* Definition of callback function */
 int disruptor_nfq_call_back(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, struct nfq_data *nfa, void *data)
 {
-	scenario_t * scenario = (scenario_t *) data;
+	//struct disrupt_stream_s *stream = (struct disrupt_stream_s *) data;
+	//struct scenario_s * scenario = &stream->scenario;
 	int16_t verdict = true;
 	int32_t pkt_id;
 	struct nfqnl_msg_packet_hdr *ph = nfq_get_msg_packet_hdr(nfa);
@@ -161,7 +156,7 @@ void disruptor_nfq_bind() {
 		d_nfq.qid=10; /* Default queue id */
 	}
 	printf("binding this socket to queue [%d]\n", d_nfq.qid);
-	d_nfq.qh = nfq_create_queue(d_nfq.h, d_nfq.qid, &disruptor_nfq_call_back, (void *)&scenario);
+	d_nfq.qh = nfq_create_queue(d_nfq.h, d_nfq.qid, &disruptor_nfq_call_back, (void *)stream);
 	if (!d_nfq.qh) {
 		fprintf(stderr, "error during nfq_create_queue()\n");
 		exit(1);
@@ -179,7 +174,7 @@ void disruptor_nfq_handle_traffic() {
 
 	d_nfq.fd = nfq_fd(d_nfq.h);
 	while ((d_nfq.recv_pkt_sz = recv(d_nfq.fd, d_nfq.buf, sizeof(d_nfq.buf), 0)) >= 0) {
-			// printf("packet received: size[%d]\n", d_nfq.recv_pkt_sz);
+			//printf("packet received: size[%d]\n", d_nfq.recv_pkt_sz);
 			nfq_handle_packet(d_nfq.h, d_nfq.buf, d_nfq.recv_pkt_sz); /* send packet to callback */
 	}
 }
@@ -206,6 +201,6 @@ void main(int argc, char **argv){
 	disruptor_command_line_options(argc, argv);
 	disruptor_nfq_init();
 	disruptor_nfq_bind();
-	scenario.qh = d_nfq.qh;
+	//stream->scenario.qh = d_nfq.qh;
 	disruptor_nfq_handle_traffic();
 }

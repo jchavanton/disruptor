@@ -7,7 +7,7 @@
 #include <linux/netfilter.h>
 #include "ezxml/ezxml.h"
 
-void scenario_init(scenario_t *s){
+void scenario_init(struct scenario_s *s){
 	if(!s->queue_seq){
 		s->queue_seq = malloc(sizeof(unsigned int) *  q_max_pkt);
 	}
@@ -16,7 +16,7 @@ void scenario_init(scenario_t *s){
 	}
 }
 
-void scenario_period_init(scenario_t *s){
+void scenario_period_init(struct scenario_s *s){
 	s->pb_state = PB_NONE;              // starting without active problem
 	s->pb_pkt_pos = 0;
 	s->pb_pkt_start = 0;
@@ -25,7 +25,7 @@ void scenario_period_init(scenario_t *s){
 	srand ( time(NULL) );   // random seed
 }
 
-void scenario_set_action(scenario_t * s){
+void scenario_set_action(struct scenario_s * s){
 	switch(s->action){   /* set the function pointer to the action */
 		case A_NONE:
 			s->scenario_action = scenario_action_none;
@@ -43,17 +43,15 @@ void scenario_set_action(scenario_t * s){
 	return;
 }
 
-void scenario_init_xml(scenario_t * s, disrupt_stream_t d_stream) {
+void scenario_init_xml(struct disrupt_stream_s *stream) {
 	printf("scenario_init_xml\n");
-	ezxml_t scenario_xml = ezxml_parse_file("scenario.xml");
-	s->scenario_period_xml = ezxml_child(scenario_xml, "period");
-	s->d_stream=d_stream;
-	scenario_init(s);
-	scenario_read_period_xml(s,0);
-	return;
+	stream->scenario.scenario_xml = ezxml_parse_file("scenario.xml");
+	stream->scenario.scenario_period_xml = ezxml_child(stream->scenario.scenario_xml, "period");
+	scenario_init(&stream->scenario);
+	scenario_read_period_xml(&stream->scenario,0);
 }
 
-bool scenario_read_period_xml(scenario_t * s, int32_t stream_duration) {
+bool scenario_read_period_xml(struct scenario_s * s, int32_t stream_duration) {
 	ezxml_t action;
 	const char *action_name;
 	const char *period_duration;
@@ -92,7 +90,7 @@ bool scenario_read_period_xml(scenario_t * s, int32_t stream_duration) {
 	return true;
 }
 
-bool scenario_check_pkt(scenario_t * s, uint16_t seq, uint32_t pkt_id, int32_t stream_duration){
+bool scenario_check_pkt(struct scenario_s * s, uint16_t seq, uint32_t pkt_id, int32_t stream_duration){
 	if(s == NULL || s->scenario_action == NULL)
 		return true;
 	if( stream_duration - s->period_start >= s->period_duration){

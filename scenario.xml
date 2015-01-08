@@ -1,18 +1,25 @@
 <?xml version="1.0"?>
 
+<!--
+     simulate jitter caused by "congestion" resulting in random delayed packets burst
+     action: jitter
+     rand: percentage of chances that a problem occurrence start at each packet
+     max: maximum burst size in packets
+     <action name="jitter" rand="50" max="200"/>
+
+     simulate loss
+     action: loss
+     rand: percentage losses
+-->
 
 <scenario>
-       <!-- example with 30 seconds of jitter -->
-       <period duration="5">
-                <!--
-                     simulate jitter caused by "congestion" resulting in random delayed packets burst
-                     rand: percentage of chances that a problem occurrence start at each packet
-                     max: maximum burst size in packets
-                -->
-                <!--<action name="jitter" rand="50" max="200"/>-->
-                <action name="loss" rand="15"/>
+       <period duration="20">
+                <action name="loss" rand="4"/>
        </period>
-       <period duration="30">
-                <action name="loss" rand="5"/>
-        </period>
+       <period duration="25">
+                <action name="loss" rand="0"/>
+       </period>
+       <period duration="240">
+                <action name="loss" rand="4"/>
+       </period>
 </scenario>
