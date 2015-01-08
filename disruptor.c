@@ -73,7 +73,7 @@ bool disrupt_udp_packet_analisys(char * payload_transport, int32_t pkt_id){
 		gettimeofday(&t,NULL);
 		int32_t stream_duration = (int32_t)(t.tv_sec - stream->start.tv_sec);
 		if(seq%100 == 0){
-			printf("RTP version[%d] seq[%d] ts[%d] ssrc[%d] duration[%d]\n", rtp_msg->header.version, seq, ts, ssrc, stream_duration);
+			printf("RTP version[%d] seq[%d] ts[%d] ssrc[%#x] duration[%d]\n", rtp_msg->header.version, seq, ts, ssrc, stream_duration);
 		}
 		/* check scenario : if there is and active scenario is will decide what to do with the packet */
 		return scenario_check_pkt(&stream->scenario, seq, pkt_id, stream_duration);
