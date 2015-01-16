@@ -29,7 +29,7 @@ typedef struct disrupt_nfq_s {
 
 disrupt_nfq_t d_nfq; /* Disruptor Netfilter */
 
-bool disrupt_tcp_packet_analisys(unsigned char * payload_transport, int32_t pkt_id){
+bool disrupt_tcp_packet_analysis(unsigned char * payload_transport, int32_t pkt_id){
 	struct tcphdr * tcp_header = (struct tcphdr *) payload_transport;
 	unsigned char * payload_app = payload_transport + (tcp_header->doff * 4); /* Data Offset: 4 bits, The number of 32 bit words in the TCP Header. */
 
@@ -58,7 +58,7 @@ bool disrupt_tcp_packet_analisys(unsigned char * payload_transport, int32_t pkt_
 	return true;
 }
 
-bool disrupt_udp_packet_analisys(char * payload_transport, int32_t pkt_id){
+bool disrupt_udp_packet_analysis(char * payload_transport, int32_t pkt_id){
 	struct udphdr * udp_hdr = (struct udphdr *) payload_transport;
 	unsigned char * payload_app = payload_transport + sizeof(struct udphdr);
 
@@ -99,17 +99,17 @@ void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 	}
 }
 
-bool disrupt_ip_packet_analisys(struct nfq_data *nfa, int32_t pkt_id) {
+bool disrupt_ip_packet_analysis(struct nfq_data *nfa, int32_t pkt_id) {
 	unsigned char *payload_data;
 	uint16_t payload_len = nfq_get_payload(nfa, &payload_data);
 	struct iphdr * ip_hdr = (struct iphdr *)(payload_data);
 
 	/* Detect transport protocol */
 	if ( ip_hdr->protocol == IPPROTO_TCP ) {
-		return disrupt_tcp_packet_analisys(payload_data + sizeof(struct iphdr), pkt_id);
+		return disrupt_tcp_packet_analysis(payload_data + sizeof(struct iphdr), pkt_id);
 	} else if ( ip_hdr->protocol == IPPROTO_UDP ) {
 		disrupt_stream_detection(ip_hdr, (struct udphdr *) (payload_data + sizeof(struct iphdr)) );
-		return disrupt_udp_packet_analisys(payload_data + sizeof(struct iphdr), pkt_id);
+		return disrupt_udp_packet_analysis(payload_data + sizeof(struct iphdr), pkt_id);
 	}
 }
 
@@ -124,7 +124,7 @@ int disruptor_nfq_call_back(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, str
 	if (ph) {
  		pkt_id = ntohl(ph->packet_id);
 	}
-	verdict = disrupt_ip_packet_analisys(nfa, pkt_id);
+	verdict = disrupt_ip_packet_analysis(nfa, pkt_id);
 	if(verdict){
 		nfq_set_verdict(qh, pkt_id, verdict, 0, NULL); /* if scenario is not keeping the packet rwe release it immediatly */
 	}
