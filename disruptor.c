@@ -100,7 +100,7 @@ void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 }
 
 bool disrupt_ip_packet_analisys(struct nfq_data *nfa, int32_t pkt_id) {
-	char *payload_data;
+	unsigned char *payload_data;
 	uint16_t payload_len = nfq_get_payload(nfa, &payload_data);
 	struct iphdr * ip_hdr = (struct iphdr *)(payload_data);
 

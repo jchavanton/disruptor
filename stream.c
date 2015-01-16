@@ -1,4 +1,4 @@
-
+#include <inttypes.h>
 #include "include/scenario.h"
 
 struct disrupt_stream_s * stream_get(struct disrupt_stream_s * stream, uint32_t src_ip, uint16_t src_port, uint32_t dst_ip, uint16_t dst_port){
@@ -38,7 +38,7 @@ struct disrupt_stream_s * stream_add(struct disrupt_stream_s * stream, uint32_t 
 
 void stream_print(struct disrupt_stream_s * stream){
 	while(stream != NULL){
-		printf("active stream: src ip:port[%d.%d.%d.%d:%d] dest ip:port[%d.%d.%d.%d:%d] start[%lld]\n",
+		printf("active stream: src ip:port[%d.%d.%d.%d:%d] dest ip:port[%d.%d.%d.%d:%d] start[%"PRId64"]\n",
 			(stream->socket.src_ip>>24)&0xFF,(stream->socket.src_ip>>16)&0xFF,(stream->socket.src_ip>>8)&0xFF,(stream->socket.src_ip)&0xFF,
 			ntohs(stream->socket.src_port),
 			(stream->socket.dst_ip>>24)&0xFF,(stream->socket.dst_ip>>16)&0xFF,(stream->socket.dst_ip>>8)&0xFF,(stream->socket.dst_ip)&0xFF,
