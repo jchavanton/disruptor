@@ -6,6 +6,8 @@
 #include <stdbool.h>
 #include "../ezxml/ezxml.h"
 #include "stream.h"
+#include <stdint.h>
+
 
 static const int32_t q_max_pkt = 10000; // max packet queue size for the scenario
 
@@ -39,7 +41,18 @@ struct scenario_s {
 	enum scenario_action_e action;
 	int16_t period_start;
 	int16_t period_duration;
+	int32_t period_packet_count;
+	int32_t period_bandwidth;
 };
+
+typedef struct disrupt_packet_s {
+	int16_t size;
+	int32_t pkt_id;
+	bool rtp;
+	uint32_t ssrc;
+	uint16_t seq;
+	uint32_t ts;
+} disrupt_packet_t;
 
 struct disrupt_socket_s {
 	uint16_t src_port;
@@ -71,7 +84,7 @@ void scenario_set_queue_handle(struct scenario_s * s, struct nfq_q_handle *qh);
  * return false if the packet is stored in the scenario telling the core to return
  * return true if the packet is not touched by the scenario 
  * */
-bool scenario_check_pkt(struct scenario_s * s, uint16_t seq, uint32_t pkt_id, int32_t stream_duration);
+bool scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, int32_t stream_duration);
 
 /*
  * scenario section

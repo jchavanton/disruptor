@@ -13,13 +13,43 @@
 -->
 
 <scenario>
-       <period duration="20">
-                <action name="loss" rand="4"/>
-       </period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
+       <period duration="5"><action name="loss" rand="15"/></period>
        <period duration="25">
-                <action name="loss" rand="0"/>
+                <action name="loss" rand="1"/>
        </period>
        <period duration="240">
-                <action name="loss" rand="4"/>
+                <action name="loss" rand="1"/>
        </period>
 </scenario>

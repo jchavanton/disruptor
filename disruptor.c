@@ -18,6 +18,7 @@ struct scenario_s *scenario;
 struct disrupt_stream_s *stream_head;
 struct disrupt_stream_s *stream;
 
+
 typedef struct disrupt_nfq_s {
 	struct nfq_q_handle *qh;	/* Netfilter Queue handle */
 	struct nfq_handle *h;		/* Netfilter handle */
@@ -28,6 +29,7 @@ typedef struct disrupt_nfq_s {
 } disrupt_nfq_t;
 
 disrupt_nfq_t d_nfq; /* Disruptor Netfilter */
+disrupt_packet_t packet; /* current packet */
 
 bool disrupt_tcp_packet_analysis(unsigned char * payload_transport, int32_t pkt_id){
 	struct tcphdr * tcp_header = (struct tcphdr *) payload_transport;
@@ -65,18 +67,19 @@ bool disrupt_udp_packet_analysis(char * payload_transport, int32_t pkt_id){
 	/* RTP DETECTION */
 	rtp_msg_t * rtp_msg = (rtp_msg_t *) payload_app;
 	if(rtp_msg->header.version == 2){
-		uint16_t seq = ntohs(rtp_msg->header.seq);
-		uint32_t ssrc = ntohl(rtp_msg->header.ssrc);
-		uint32_t ts = ntohl(rtp_msg->header.ts);
+		packet.seq = ntohs(rtp_msg->header.seq);
+		packet.ssrc = ntohl(rtp_msg->header.ssrc);
+		packet.ts = ntohl(rtp_msg->header.ts);
+		packet.rtp = true;
 
 		struct timeval t;
 		gettimeofday(&t,NULL);
 		int32_t stream_duration = (int32_t)(t.tv_sec - stream->start.tv_sec);
-		if(seq%100 == 0){
-			printf("RTP version[%d] seq[%d] ts[%d] ssrc[%#x] duration[%d]\n", rtp_msg->header.version, seq, ts, ssrc, stream_duration);
+		if(packet.seq%100 == 0){
+			printf("RTP version[%d] seq[%d] ts[%d] ssrc[%#x] B[%d] duration[%d]\n", rtp_msg->header.version, packet.seq, packet.ts, packet.ssrc, packet.size, stream_duration);
 		}
 		/* check scenario : if there is and active scenario is will decide what to do with the packet */
-		return scenario_check_pkt(&stream->scenario, seq, pkt_id, stream_duration);
+		return scenario_check_pkt(&stream->scenario, &packet, stream_duration);
 	}
 	return true;
 }
@@ -100,7 +103,7 @@ void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 }
 
 bool disrupt_ip_packet_analysis(struct nfq_data *nfa, int32_t pkt_id) {
-	unsigned char *payload_data;
+	char *payload_data;
 	uint16_t payload_len = nfq_get_payload(nfa, &payload_data);
 	struct iphdr * ip_hdr = (struct iphdr *)(payload_data);
 
@@ -175,6 +178,7 @@ void disruptor_nfq_handle_traffic() {
 	d_nfq.fd = nfq_fd(d_nfq.h);
 	while ((d_nfq.recv_pkt_sz = recv(d_nfq.fd, d_nfq.buf, sizeof(d_nfq.buf), 0)) >= 0) {
 			//printf("packet received: size[%d]\n", d_nfq.recv_pkt_sz);
+			packet.size=d_nfq.recv_pkt_sz;
 			nfq_handle_packet(d_nfq.h, d_nfq.buf, d_nfq.recv_pkt_sz); /* send packet to callback */
 	}
 }
