@@ -36,13 +36,13 @@ struct scenario_s {
 	int32_t *queue_delay;			// packet currently delayed are queued here
 	int32_t *queue_seq;			// sequence number of packet in the queue (when using RTP in clear)
 	struct nfq_q_handle *qh;		// struct nfq_q_handle *qh
-	bool (*scenario_action)(struct scenario_s * s, int seq, u_int32_t pkt_id);
+	int (*scenario_action)(struct scenario_s * s, int seq, u_int32_t pkt_id);
 	int32_t period_pkt_count;		// packet count during this period
 	enum scenario_action_e action;
 	int16_t period_start;
 	int16_t period_duration;
 	int32_t period_packet_count;
-	int32_t period_bandwidth;
+	int32_t period_bytes_received;
 };
 
 typedef struct disrupt_packet_s {
@@ -84,14 +84,14 @@ void scenario_set_queue_handle(struct scenario_s * s, struct nfq_q_handle *qh);
  * return false if the packet is stored in the scenario telling the core to return
  * return true if the packet is not touched by the scenario 
  * */
-bool scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, int32_t stream_duration);
+int scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, int32_t stream_duration);
 
 /*
  * scenario section
  * */
 
-bool scenario_action_none(struct scenario_s * s, int seq, u_int32_t pkt_id);
-bool scenario_action_jitter(struct scenario_s * s, int seq, u_int32_t pkt_id);
-bool scenario_action_loss(struct scenario_s * s, int seq, u_int32_t pkt_id);
+int scenario_action_none(struct scenario_s * s, int seq, u_int32_t pkt_id);
+int scenario_action_jitter(struct scenario_s * s, int seq, u_int32_t pkt_id);
+int scenario_action_loss(struct scenario_s * s, int seq, u_int32_t pkt_id);
 
 #endif

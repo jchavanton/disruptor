@@ -60,7 +60,7 @@ bool disrupt_tcp_packet_analysis(unsigned char * payload_transport, int32_t pkt_
 	return true;
 }
 
-bool disrupt_udp_packet_analysis(char * payload_transport, int32_t pkt_id){
+int disrupt_udp_packet_analysis(char * payload_transport, int32_t pkt_id){
 	struct udphdr * udp_hdr = (struct udphdr *) payload_transport;
 	unsigned char * payload_app = payload_transport + sizeof(struct udphdr);
 
@@ -102,7 +102,7 @@ void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 	}
 }
 
-bool disrupt_ip_packet_analysis(struct nfq_data *nfa, int32_t pkt_id) {
+int disrupt_ip_packet_analysis(struct nfq_data *nfa, int32_t pkt_id) {
 	char *payload_data;
 	uint16_t payload_len = nfq_get_payload(nfa, &payload_data);
 	struct iphdr * ip_hdr = (struct iphdr *)(payload_data);
@@ -127,9 +127,15 @@ int disruptor_nfq_call_back(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg, str
 	if (ph) {
  		pkt_id = ntohl(ph->packet_id);
 	}
+	// NF_DROP 0
+	// NF_ACCEPT 1
+	// NF_STOLEN 2
+	// NF_QUEUE 3
+	// NF_REPEAT 4
+	// NF_STOP 5
 	verdict = disrupt_ip_packet_analysis(nfa, pkt_id);
 	if(verdict){
-		nfq_set_verdict(qh, pkt_id, verdict, 0, NULL); /* if scenario is not keeping the packet rwe release it immediatly */
+		nfq_set_verdict(qh, pkt_id, verdict, 0, NULL); /* if scenario is not keeping the packet we release it immediatly */
 	}
 	return 1;
 }
@@ -201,7 +207,12 @@ void disruptor_command_line_options(int argc, char **argv){
 	}
 }
 
+void set_logging(void){
+	//fflush(stdout);
+}
+
 void main(int argc, char **argv){
+	set_logging();
 	disruptor_command_line_options(argc, argv);
 	disruptor_nfq_init();
 	disruptor_nfq_bind();

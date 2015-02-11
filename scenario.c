@@ -65,7 +65,7 @@ bool scenario_read_period_xml(struct scenario_s * s, int32_t stream_duration) {
 		s->period_start = stream_duration;
 		s->period_duration = atoi(period_duration);
 		s->period_packet_count =0;
-		s->period_bandwidth=0;
+		s->period_bytes_received=0;
 		scenario_period_init(s);
 		s->scenario_period_xml = s->scenario_period_xml->next;
 	} else {
@@ -92,17 +92,20 @@ bool scenario_read_period_xml(struct scenario_s * s, int32_t stream_duration) {
 	return true;
 }
 
-bool scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, int32_t stream_duration){
+int scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, int32_t stream_duration){
 	if(s == NULL || s->scenario_action == NULL)
 		return true;
 	s->period_packet_count++;
-	s->period_bandwidth = s->period_bandwidth + packet->size;
+	s->period_bytes_received = s->period_bytes_received + packet->size;
 	if( stream_duration - s->period_start >= s->period_duration){
 		int32_t bps=0;
 		//if(s->period_duration > 0){
 		//	bps = s->period_bandwidth / s->period_duration;
 		//}
-		printf("scenario period completed...[%ds]to[%ds] pkt_rx[%d] bytes[%d]\n", s->period_start, stream_duration, s->period_packet_count, s->period_bandwidth);
+		printf("\e[1;34mscenario period completed...[%ds]to[%ds] pkt_rx[%d] bytes[%d] bandwidth[%dKbps]\e[0m\n",
+                        s->period_start, stream_duration, s->period_packet_count, s->period_bytes_received
+                        , s->period_bytes_received*8/(s->period_duration*1024)
+                );
 		if(!scenario_read_period_xml(s, stream_duration)) {
 			//s->action=NONE;
 			//scenario_set_action(s);

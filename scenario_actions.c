@@ -15,11 +15,11 @@ static int16_t sc_random(int16_t max) {
 	return ( ( random() % max ) + 1);
 }
 
-bool scenario_action_none(struct scenario_s * s, int seq, u_int32_t pkt_id){
+int scenario_action_none(struct scenario_s * s, int seq, u_int32_t pkt_id){
 	return true;
 }
 
-bool scenario_action_loss(struct scenario_s * s, int seq, uint32_t pkt_id){
+int scenario_action_loss(struct scenario_s * s, int seq, uint32_t pkt_id){
 	int16_t var_rand = 0;
 	s->period_pkt_count++;
 	var_rand = sc_random(100);
@@ -31,7 +31,7 @@ bool scenario_action_loss(struct scenario_s * s, int seq, uint32_t pkt_id){
 	return true;
 }
 
-bool scenario_action_jitter(struct scenario_s * s, int seq, uint32_t pkt_id){
+int scenario_action_jitter(struct scenario_s * s, int seq, uint32_t pkt_id){
 	int16_t var_rand = 0;
 	s->period_pkt_count++;
 
