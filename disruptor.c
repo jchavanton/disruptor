@@ -71,6 +71,7 @@ int disrupt_udp_packet_analysis(char * payload_transport, int32_t pkt_id){
 		packet.ssrc = ntohl(rtp_msg->header.ssrc);
 		packet.ts = ntohl(rtp_msg->header.ts);
 		packet.rtp = true;
+		packet.pkt_id = pkt_id;
 
 		struct timeval t;
 		gettimeofday(&t,NULL);

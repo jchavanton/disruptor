@@ -113,7 +113,7 @@ int scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, 
 		}
 		return true;
 	}
-	return s->scenario_action(s, packet->seq, packet->pkt_id);
+	return s->scenario_action(s, packet);
 }
 
 

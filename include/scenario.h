@@ -24,6 +24,15 @@ enum scenario_problem_state_e {
 	PB_STOP
 };
 
+typedef struct disrupt_packet_s {
+	int16_t size;
+	int32_t pkt_id;
+	bool rtp;
+	uint32_t ssrc;
+	uint16_t seq;
+	uint32_t ts;
+} disrupt_packet_t;
+
 struct scenario_s {
 	ezxml_t scenario_xml;
 	ezxml_t scenario_period_xml;
@@ -36,7 +45,7 @@ struct scenario_s {
 	int32_t *queue_delay;			// packet currently delayed are queued here
 	int32_t *queue_seq;			// sequence number of packet in the queue (when using RTP in clear)
 	struct nfq_q_handle *qh;		// struct nfq_q_handle *qh
-	int (*scenario_action)(struct scenario_s * s, int seq, u_int32_t pkt_id);
+	int (*scenario_action)(struct scenario_s * s, struct disrupt_packet_s * p);
 	int32_t period_pkt_count;		// packet count during this period
 	enum scenario_action_e action;
 	int16_t period_start;
@@ -44,15 +53,6 @@ struct scenario_s {
 	int32_t period_packet_count;
 	int32_t period_bytes_received;
 };
-
-typedef struct disrupt_packet_s {
-	int16_t size;
-	int32_t pkt_id;
-	bool rtp;
-	uint32_t ssrc;
-	uint16_t seq;
-	uint32_t ts;
-} disrupt_packet_t;
 
 struct disrupt_socket_s {
 	uint16_t src_port;
@@ -90,8 +90,8 @@ int scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, 
  * scenario section
  * */
 
-int scenario_action_none(struct scenario_s * s, int seq, u_int32_t pkt_id);
-int scenario_action_jitter(struct scenario_s * s, int seq, u_int32_t pkt_id);
-int scenario_action_loss(struct scenario_s * s, int seq, u_int32_t pkt_id);
+int scenario_action_none(struct scenario_s * s, struct disrupt_packet_s * packet);
+int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * packet);
+int scenario_action_loss(struct scenario_s * s, struct disrupt_packet_s * packet);
 
 #endif

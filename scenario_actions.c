@@ -15,23 +15,23 @@ static int16_t sc_random(int16_t max) {
 	return ( ( random() % max ) + 1);
 }
 
-int scenario_action_none(struct scenario_s * s, int seq, u_int32_t pkt_id){
+int scenario_action_none(struct scenario_s * s, struct disrupt_packet_s * p){
 	return true;
 }
 
-int scenario_action_loss(struct scenario_s * s, int seq, uint32_t pkt_id){
+int scenario_action_loss(struct scenario_s * s, struct disrupt_packet_s * p){
 	int16_t var_rand = 0;
 	s->period_pkt_count++;
 	var_rand = sc_random(100);
 	if( var_rand <= s->init_random_occurence ){
-		printf("random_scenario[loss]: dropping pkt_id[%d] seq[%d]\n", pkt_id, seq);
-		nfq_set_verdict(s->qh, pkt_id, NF_DROP, 0, NULL);
+		printf("random_scenario[loss]: dropping pkt_id[%d] seq[%d]\n", p->pkt_id, p->seq);
+		nfq_set_verdict(s->qh, p->pkt_id, NF_DROP, 0, NULL);
 		return false;
 	}
 	return true;
 }
 
-int scenario_action_jitter(struct scenario_s * s, int seq, uint32_t pkt_id){
+int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 	int16_t var_rand = 0;
 	s->period_pkt_count++;
 
@@ -44,7 +44,7 @@ int scenario_action_jitter(struct scenario_s * s, int seq, uint32_t pkt_id){
 	}
 
 	if(s->pb_state == PB_NONE) {
-		printf("scenario_action[jitter]: no problem pkt_id[%d] seq[%d] period_cnt[%d]\n", pkt_id, seq , s->period_pkt_count);
+		printf("scenario_action[jitter]: no problem pkt_id[%d] seq[%d] period_cnt[%d]\n", p->pkt_id, p->seq , s->period_pkt_count);
 	} else if(s->pb_state == PB_INIT) {
 		s->pb_pkt_pos = 0;
 		s->pb_pkt_start = s->period_pkt_count;
@@ -54,10 +54,10 @@ int scenario_action_jitter(struct scenario_s * s, int seq, uint32_t pkt_id){
 	}
 
 	if(s->pb_state == PB_ACTIVE){ // pb is initialized, start queing packets
-		s->queue_delay[s->pb_pkt_pos] = pkt_id;
-		s->queue_seq[s->pb_pkt_pos] = seq;
+		s->queue_delay[s->pb_pkt_pos] = p->pkt_id;
+		s->queue_seq[s->pb_pkt_pos] = p->seq;
 
-		printf("scenario_action[jitter]: queueing[%d/%d] pkt_id[%d] seq[%d] period_cnt[%d]\n", s->pb_pkt_pos, s->pb_pkt_max, pkt_id, seq, s->period_pkt_count);
+		printf("scenario_action[jitter]: queueing[%d/%d] pkt_id[%d] seq[%d] period_cnt[%d]\n", s->pb_pkt_pos, s->pb_pkt_max, p->pkt_id, p->seq, s->period_pkt_count);
 		if(s->pb_pkt_pos == s->pb_pkt_max){
 			s->pb_state = PB_STOP;
 		} else {
@@ -69,8 +69,8 @@ int scenario_action_jitter(struct scenario_s * s, int seq, uint32_t pkt_id){
 		int i;
 		for (i=0;i<=s->pb_pkt_pos;i++){
 			pkt_id = s->queue_delay[i];
-			printf("scenario_action[jitter]: release delayed packet[%d/%d] id[%d] seq[%d] period_cnt[%d]\n", i, s->pb_pkt_max, pkt_id, s->queue_seq[i], s->period_pkt_count);
-			nfq_set_verdict(s->qh, pkt_id , NF_ACCEPT, 0, NULL);
+			printf("scenario_action[jitter]: release delayed packet[%d/%d] id[%d] seq[%d] period_cnt[%d]\n", i, s->pb_pkt_max, p->pkt_id, s->queue_seq[i], s->period_pkt_count);
+			nfq_set_verdict(s->qh, p->pkt_id , NF_ACCEPT, 0, NULL);
 		}
 		s->pb_state = PB_NONE;
 	}
