@@ -17,7 +17,7 @@
 struct scenario_s *scenario;
 struct disrupt_stream_s *stream_head;
 struct disrupt_stream_s *stream;
-
+char * scenario_filename = "scenario.xml";
 
 typedef struct disrupt_nfq_s {
 	struct nfq_q_handle *qh;	/* Netfilter Queue handle */
@@ -95,6 +95,7 @@ void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 			struct timeval t;
 			gettimeofday(&t,NULL);
 			stream->start = t;
+			stream->scenario.filename=scenario_filename;
 			scenario_init_xml(stream);
 			printf("********** new stream *********\n");
 			stream_print(stream_head);
@@ -192,7 +193,7 @@ void disruptor_nfq_handle_traffic() {
 
 void disruptor_command_line_options(int argc, char **argv){
 	int opt;
-	while ((opt = getopt(argc, argv, "hs:")) != -1) {
+	while ((opt = getopt(argc, argv, "hsf:")) != -1) {
 		switch (opt) {
 			case 'q':
 				d_nfq.qid = atoi(optarg);
@@ -202,14 +203,18 @@ void disruptor_command_line_options(int argc, char **argv){
 				printf("-q nfq queue id\n");
 				exit(1);
 				break;
+			case 'f':
+				scenario_filename = optarg;
+				break;
 			default:
 				break;
 		}
 	}
+	printf("scenario file : %s\n", scenario_filename);
 }
 
 void set_logging(void){
-	//fflush(stdout);
+	fflush(stdout);
 }
 
 void main(int argc, char **argv){

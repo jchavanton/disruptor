@@ -52,6 +52,7 @@ struct scenario_s {
 	int16_t period_duration;
 	int32_t period_packet_count;
 	int32_t period_bytes_received;
+	char * filename;
 };
 
 struct disrupt_socket_s {

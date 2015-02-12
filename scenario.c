@@ -45,7 +45,7 @@ void scenario_set_action(struct scenario_s * s){
 
 void scenario_init_xml(struct disrupt_stream_s *stream) {
 	printf("scenario_init_xml\n");
-	stream->scenario.scenario_xml = ezxml_parse_file("scenario.xml");
+	stream->scenario.scenario_xml = ezxml_parse_file(stream->scenario.filename);
 	stream->scenario.scenario_period_xml = ezxml_child(stream->scenario.scenario_xml, "period");
 	scenario_init(&stream->scenario);
 	scenario_read_period_xml(&stream->scenario,0);
