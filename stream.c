@@ -1,5 +1,6 @@
 #include <inttypes.h>
 #include "include/scenario.h"
+#include "include/disruptor.h"
 
 struct disrupt_stream_s * stream_get(struct disrupt_stream_s * stream, uint32_t src_ip, uint16_t src_port, uint32_t dst_ip, uint16_t dst_port){
 	while(stream != NULL){
@@ -17,7 +18,7 @@ struct disrupt_stream_s * stream_add(struct disrupt_stream_s * stream, uint32_t 
 	struct disrupt_stream_s * stream_new;
 	stream_new = (struct disrupt_stream_s *) malloc(sizeof(struct disrupt_stream_s));
 	if(!stream_new){
-		printf("stream_add: can not allocate memory\n");
+		log_error("stream_add: can not allocate memory\n");
 		return NULL;
 	}
 	/* initialize the stream */
@@ -38,7 +39,7 @@ struct disrupt_stream_s * stream_add(struct disrupt_stream_s * stream, uint32_t 
 
 void stream_print(struct disrupt_stream_s * stream){
 	while(stream != NULL){
-		printf("active stream: src ip:port[%d.%d.%d.%d:%d] dest ip:port[%d.%d.%d.%d:%d] start[%"PRId64"]\n",
+		log_info("active stream: src ip:port[%d.%d.%d.%d:%d] dest ip:port[%d.%d.%d.%d:%d] start[%"PRId64"]",
 			(stream->socket.src_ip>>24)&0xFF,(stream->socket.src_ip>>16)&0xFF,(stream->socket.src_ip>>8)&0xFF,(stream->socket.src_ip)&0xFF,
 			ntohs(stream->socket.src_port),
 			(stream->socket.dst_ip>>24)&0xFF,(stream->socket.dst_ip>>16)&0xFF,(stream->socket.dst_ip>>8)&0xFF,(stream->socket.dst_ip)&0xFF,

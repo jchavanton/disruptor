@@ -7,6 +7,9 @@
 #include <linux/netfilter.h>
 #include "ezxml/ezxml.h"
 
+#include "include/disruptor.h"
+
+
 void scenario_init(struct scenario_s *s){
 	if(!s->queue_seq){
 		s->queue_seq = malloc(sizeof(unsigned int) *  q_max_pkt);
@@ -44,7 +47,7 @@ void scenario_set_action(struct scenario_s * s){
 }
 
 void scenario_init_xml(struct disrupt_stream_s *stream) {
-	printf("scenario_init_xml\n");
+	log_debug("scenario_init_xml");
 	stream->scenario.scenario_xml = ezxml_parse_file(stream->scenario.filename);
 	stream->scenario.scenario_period_xml = ezxml_child(stream->scenario.scenario_xml, "period");
 	scenario_init(&stream->scenario);
@@ -69,25 +72,24 @@ bool scenario_read_period_xml(struct scenario_s * s, int32_t stream_duration) {
 		scenario_period_init(s);
 		s->scenario_period_xml = s->scenario_period_xml->next;
 	} else {
-		printf("scenario_read_period_xml: no period found.\n");
+		log_debug("scenario_read_period_xml: no period found.\n");
 		return false;
 	}
 	//ezxml_free(scenario_xml);
 
-	printf("scenario_read_xml: period[%ss] action[%s]", period_duration, action_name);
+	log_debug("scenario_read_xml: period[%ss] action[%s]", period_duration, action_name);
 	if(strcasecmp(action_name,"jitter") == 0){
 		s->action = A_JITTER;
 		s->init_max_burst = atoi(ezxml_attr(action, "max"));
 		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
-		printf(" max_burst[%d] random_occurence[%d]", s->init_max_burst, s->init_random_occurence);
+		log_debug(" max_burst[%d] random_occurence[%d]", s->init_max_burst, s->init_random_occurence);
 	} else if(strcasecmp(action_name,"loss") == 0){
 		s->action = A_LOSS;
 		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
-		printf(" percentage[%d]", s->init_random_occurence);
+		log_debug(" percentage[%d]", s->init_random_occurence);
 	} else {
 		s->action = A_NONE;
 	}
-	printf("\n");
 	scenario_set_action(s);
 	return true;
 }
@@ -102,7 +104,7 @@ int scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, 
 		//if(s->period_duration > 0){
 		//	bps = s->period_bandwidth / s->period_duration;
 		//}
-		printf("\e[1;34mscenario period completed...[%ds]to[%ds] pkt_rx[%d] bytes[%d] bandwidth[%dKbps]\e[0m\n",
+		log_notice("scenario period completed...[%ds]to[%ds] pkt_rx[%d] bytes[%d] bandwidth[%dKbps]",
                         s->period_start, stream_duration, s->period_packet_count, s->period_bytes_received
                         , s->period_bytes_received*8/(s->period_duration*1024)
                 );

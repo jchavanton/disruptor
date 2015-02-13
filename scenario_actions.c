@@ -1,4 +1,5 @@
 #include "include/scenario.h"
+#include "include/disruptor.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -24,7 +25,7 @@ int scenario_action_loss(struct scenario_s * s, struct disrupt_packet_s * p){
 	s->period_pkt_count++;
 	var_rand = sc_random(100);
 	if( var_rand <= s->init_random_occurence ){
-		printf("random_scenario[loss]: dropping pkt_id[%d] seq[%d]\n", p->pkt_id, p->seq);
+		log_debug("random_scenario[loss]: dropping pkt_id[%d] seq[%d]", p->pkt_id, p->seq);
 		nfq_set_verdict(s->qh, p->pkt_id, NF_DROP, 0, NULL);
 		return false;
 	}
@@ -44,20 +45,20 @@ int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 	}
 
 	if(s->pb_state == PB_NONE) {
-		printf("scenario_action[jitter]: no problem pkt_id[%d] seq[%d] period_cnt[%d]\n", p->pkt_id, p->seq , s->period_pkt_count);
+		log_debug("scenario_action[jitter]: no problem pkt_id[%d] seq[%d] period_cnt[%d]", p->pkt_id, p->seq , s->period_pkt_count);
 	} else if(s->pb_state == PB_INIT) {
 		s->pb_pkt_pos = 0;
 		s->pb_pkt_start = s->period_pkt_count;
 		s->pb_state = PB_ACTIVE;
 		s->pb_pkt_max = sc_random(s->init_max_burst); // in this scenario this is a random amount of packet delayed emulate congestion
-		printf("scenario_action[jitter]: problem initialized affecting[%d] packets \n",s->pb_pkt_max);
+		log_debug("scenario_action[jitter]: problem initialized affecting[%d] packets",s->pb_pkt_max);
 	}
 
 	if(s->pb_state == PB_ACTIVE){ // pb is initialized, start queing packets
 		s->queue_delay[s->pb_pkt_pos] = p->pkt_id;
 		s->queue_seq[s->pb_pkt_pos] = p->seq;
 
-		printf("scenario_action[jitter]: queueing[%d/%d] pkt_id[%d] seq[%d] period_cnt[%d]\n", s->pb_pkt_pos, s->pb_pkt_max, p->pkt_id, p->seq, s->period_pkt_count);
+		log_debug("scenario_action[jitter]: queueing[%d/%d] pkt_id[%d] seq[%d] period_cnt[%d]", s->pb_pkt_pos, s->pb_pkt_max, p->pkt_id, p->seq, s->period_pkt_count);
 		if(s->pb_pkt_pos == s->pb_pkt_max){
 			s->pb_state = PB_STOP;
 		} else {
@@ -69,7 +70,7 @@ int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 		int i;
 		for (i=0;i<=s->pb_pkt_pos;i++){
 			pkt_id = s->queue_delay[i];
-			printf("scenario_action[jitter]: release delayed packet[%d/%d] id[%d] seq[%d] period_cnt[%d]\n", i, s->pb_pkt_max, p->pkt_id, s->queue_seq[i], s->period_pkt_count);
+			log_debug("scenario_action[jitter]: release delayed packet[%d/%d] id[%d] seq[%d] period_cnt[%d]", i, s->pb_pkt_max, p->pkt_id, s->queue_seq[i], s->period_pkt_count);
 			nfq_set_verdict(s->qh, p->pkt_id , NF_ACCEPT, 0, NULL);
 		}
 		s->pb_state = PB_NONE;

@@ -9,6 +9,7 @@
 #include <linux/udp.h>
 #include <stdbool.h>
 
+#include "include/disruptor.h"
 #include "include/rtp.h"
 #include "include/scenario.h"
 
@@ -18,6 +19,7 @@ struct scenario_s *scenario;
 struct disrupt_stream_s *stream_head;
 struct disrupt_stream_s *stream;
 char * scenario_filename = "scenario.xml";
+int log_level = 2;
 
 typedef struct disrupt_nfq_s {
 	struct nfq_q_handle *qh;	/* Netfilter Queue handle */
@@ -37,25 +39,25 @@ bool disrupt_tcp_packet_analysis(unsigned char * payload_transport, int32_t pkt_
 
 	/* SIP DETECTION */
 	if( strncmp( payload_app, "SIP/2.0 ", 8) == 0 ){
-		printf("SIP RESPONSE[%c%c%c]\n", payload_app[8], payload_app[9], payload_app[10]);
+		log_notice("SIP RESPONSE[%c%c%c]", payload_app[8], payload_app[9], payload_app[10]);
 		return 1;
 	}
 
 	char *sip_found = strstr(payload_app,"sip:");
 	if(!sip_found) {
-		printf("TCP unknown\n");
+		log_debug("TCP unknown");
 		return 1;
 	}
 	int16_t sip_method_len = (unsigned char *)sip_found-payload_app - 1;
 	if(sip_method_len > 10){
-		printf("TCP SIP method not found...\n");
+		log_notice("TCP SIP method not found...");
 		return 1;
 	}
 	char sip_method[128];
 	strncpy(sip_method, payload_app, sip_method_len);
 	sip_method[sip_method_len] ='\0';
 	if( sip_method ){
-		printf("SIP REQUEST[%s]\n", sip_method);
+		log_notice("SIP REQUEST[%s]", sip_method);
 	}
 	return true;
 }
@@ -77,7 +79,7 @@ int disrupt_udp_packet_analysis(char * payload_transport, int32_t pkt_id){
 		gettimeofday(&t,NULL);
 		int32_t stream_duration = (int32_t)(t.tv_sec - stream->start.tv_sec);
 		if(packet.seq%100 == 0){
-			printf("RTP version[%d] seq[%d] ts[%d] ssrc[%#x] B[%d] duration[%d]\n", rtp_msg->header.version, packet.seq, packet.ts, packet.ssrc, packet.size, stream_duration);
+			log_debug("RTP version[%d] seq[%d] ts[%d] ssrc[%#x] B[%d] duration[%d]", rtp_msg->header.version, packet.seq, packet.ts, packet.ssrc, packet.size, stream_duration);
 		}
 		/* check scenario : if there is and active scenario is will decide what to do with the packet */
 		return scenario_check_pkt(&stream->scenario, &packet, stream_duration);
@@ -97,9 +99,9 @@ void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 			stream->start = t;
 			stream->scenario.filename=scenario_filename;
 			scenario_init_xml(stream);
-			printf("********** new stream *********\n");
+			log_info("********** new stream *********");
 			stream_print(stream_head);
-			printf("*******************************\n");
+			log_info("*******************************");
 		}
 	}
 }
@@ -146,17 +148,17 @@ void disruptor_nfq_init() {
 	/* Library initialisation */
 	d_nfq.h = nfq_open();
 	if (!d_nfq.h) {
-		fprintf(stderr, "error during nfq_open()\n");
+		log_error("error during nfq_open()");
 		exit(1);
 	}
-	printf("unbinding existing nf_queue handler for AF_INET (if any)\n");
+	log_debug("unbinding existing nf_queue handler for AF_INET (if any)");
 	if (nfq_unbind_pf(d_nfq.h, AF_INET) < 0) {
-		fprintf(stderr, "error during nfq_unbind_pf()\n");
+		log_error("error during nfq_unbind_pf()");
 		exit(1);
 	}
-	printf("binding nfnetlink_queue as nf_queue handler for AF_INET\n");
+	log_debug("binding nfnetlink_queue as nf_queue handler for AF_INET");
 	if (nfq_bind_pf(d_nfq.h, AF_INET) < 0) {
-		fprintf(stderr, "error during nfq_bind_pf()\n");
+		log_error("error during nfq_bind_pf()");
 		exit(1);
 	}
 }
@@ -166,16 +168,16 @@ void disruptor_nfq_bind() {
 	if(!d_nfq.qid){
 		d_nfq.qid=10; /* Default queue id */
 	}
-	printf("binding this socket to queue [%d]\n", d_nfq.qid);
+	log_info("binding this socket to queue [%d]", d_nfq.qid);
 	d_nfq.qh = nfq_create_queue(d_nfq.h, d_nfq.qid, &disruptor_nfq_call_back, (void *)stream);
 	if (!d_nfq.qh) {
-		fprintf(stderr, "error during nfq_create_queue()\n");
+		log_error("error during nfq_create_queue()");
 		exit(1);
 	}
 
-	printf("setting copy_packet mode\n");
+	log_debug("setting copy_packet mode");
 	if (nfq_set_mode(d_nfq.qh, NFQNL_COPY_PACKET, 0xffff) < 0) {
-		fprintf(stderr, "can't set packet_copy mode\n");
+		log_error("can't set packet_copy mode");
 		exit(1);
 	}
 }
@@ -185,7 +187,6 @@ void disruptor_nfq_handle_traffic() {
 
 	d_nfq.fd = nfq_fd(d_nfq.h);
 	while ((d_nfq.recv_pkt_sz = recv(d_nfq.fd, d_nfq.buf, sizeof(d_nfq.buf), 0)) >= 0) {
-			//printf("packet received: size[%d]\n", d_nfq.recv_pkt_sz);
 			packet.size=d_nfq.recv_pkt_sz;
 			nfq_handle_packet(d_nfq.h, d_nfq.buf, d_nfq.recv_pkt_sz); /* send packet to callback */
 	}
@@ -193,14 +194,17 @@ void disruptor_nfq_handle_traffic() {
 
 void disruptor_command_line_options(int argc, char **argv){
 	int opt;
-	while ((opt = getopt(argc, argv, "hsf:")) != -1) {
+	while ((opt = getopt(argc, argv, "hsfl:")) != -1) {
 		switch (opt) {
+			case 'l':
+				log_level =  atoi(optarg);
+				break;
 			case 'q':
 				d_nfq.qid = atoi(optarg);
-				printf("disruptor_command_line_options: nfq queue id[%d]\n", d_nfq.qid);
+				log_info("disruptor_command_line_options: nfq queue id[%d]", d_nfq.qid);
 				break;
 			case 'h':
-				printf("-q nfq queue id\n");
+				log_info("-q nfq queue id\n-f scenario file name\n-l log level: 0=error, 1=info, 2=notice, 3=debug");
 				exit(1);
 				break;
 			case 'f':
@@ -210,12 +214,54 @@ void disruptor_command_line_options(int argc, char **argv){
 				break;
 		}
 	}
-	printf("scenario file : %s\n", scenario_filename);
+	log_info("scenario file[%s] loglevel[%d]", scenario_filename, log_level);
 }
 
 void set_logging(void){
 	fflush(stdout);
 }
+
+void log_error( const char* format, ... ) {
+	va_list args;
+	fprintf( stderr, "\e[1;31m" );
+	va_start( args, format );
+	vfprintf( stderr, format, args );
+	va_end( args );
+	fprintf( stderr, "\e[0m\n" );
+}
+void log_info( const char* format, ... ) {
+	if(log_level < 1)
+		return;
+	va_list args;
+	fprintf( stdout, "\e[1;35m" );
+	va_start( args, format );
+	vfprintf( stdout, format, args );
+	va_end( args );
+	fprintf( stdout, "\e[0m\n" );
+}
+
+void log_notice( const char* format, ... ) {
+	if(log_level < 2)
+		return;
+	va_list args;
+	fprintf( stdout, "\e[1;34m" );
+	va_start( args, format );
+	vfprintf( stdout, format, args );
+	va_end( args );
+	fprintf( stdout, "\e[0m\n" );
+}
+
+void log_debug( const char* format, ... ) {
+	if(log_level < 3)
+		return;
+	va_list args;
+	fprintf( stdout, "\e[1;37m" );
+	va_start( args, format );
+	vfprintf( stdout, format, args );
+	va_end( args );
+	fprintf( stdout, "\e[0m\n" );
+}
+
 
 void main(int argc, char **argv){
 	set_logging();
