@@ -99,9 +99,9 @@ void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 			stream->start = t;
 			stream->scenario.filename=scenario_filename;
 			scenario_init_xml(stream);
-			log_info("********** new stream *********");
+			log_info("********** new stream detected *********");
 			stream_print(stream_head);
-			log_info("*******************************");
+			log_info("****************************************");
 		}
 	}
 }
@@ -168,7 +168,7 @@ void disruptor_nfq_bind() {
 	if(!d_nfq.qid){
 		d_nfq.qid=10; /* Default queue id */
 	}
-	log_info("binding this socket to queue [%d]", d_nfq.qid);
+	log_info("binding intercept socket to queue [%d]", d_nfq.qid);
 	d_nfq.qh = nfq_create_queue(d_nfq.h, d_nfq.qid, &disruptor_nfq_call_back, (void *)stream);
 	if (!d_nfq.qh) {
 		log_error("error during nfq_create_queue()");
