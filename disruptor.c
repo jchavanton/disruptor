@@ -194,7 +194,7 @@ void disruptor_nfq_handle_traffic() {
 
 void disruptor_command_line_options(int argc, char **argv){
 	int opt;
-	while ((opt = getopt(argc, argv, "hsfl:")) != -1) {
+	while ((opt = getopt(argc, argv, "hslf:")) != -1) {
 		switch (opt) {
 			case 'l':
 				log_level =  atoi(optarg);

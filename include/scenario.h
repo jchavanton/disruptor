@@ -50,8 +50,9 @@ struct scenario_s {
 	enum scenario_action_e action;
 	int16_t period_start;
 	int16_t period_duration;
-	int32_t period_packet_count;
 	int32_t period_bytes_received;
+	int32_t period_pkt_loss;
+	int32_t period_pkt_delayed;
 	char * filename;
 };
 
