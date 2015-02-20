@@ -106,10 +106,14 @@ int scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, 
 		//if(s->period_duration > 0){
 		//	bps = s->period_bandwidth / s->period_duration;
 		//}
-		log_notice("scenario period completed...[%ds]to[%ds] action[%d]loss[%d]delayed[%d]received[%d]bytes[%d] bandwidth[%dKbps]",
+		log_notice("scenario period completed...[%ds]to[%ds] action[%d]loss[%d%%]delayed[%d]received[%d]bytes[%d] bandwidth[%dKbps]",
                         s->period_start,stream_duration,s->action,
-                        s->period_pkt_loss,s->period_pkt_delayed,s->period_pkt_count,s->period_bytes_received,
-                        s->period_bytes_received*8/(s->period_duration*1024), s->action
+                        s->period_pkt_loss*100/s->period_pkt_count,
+                        s->period_pkt_delayed,
+                        s->period_pkt_count,
+                        s->period_bytes_received,
+                        s->period_bytes_received*8/(s->period_duration*1024),
+                        s->action
                 );
 		if(!scenario_read_period_xml(s, stream_duration)) {
 			//s->action=NONE;
