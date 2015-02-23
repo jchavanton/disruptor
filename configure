@@ -1674,6 +1674,9 @@ ac_config_files="$ac_config_files Makefile"
 
 
 
+# verify the presence and version of Net filter queue
+
+
 
 
 
@@ -1801,12 +1804,12 @@ if test -n "$NET_FILTER_QUEUE_CFLAGS"; then
     pkg_cv_NET_FILTER_QUEUE_CFLAGS="$NET_FILTER_QUEUE_CFLAGS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libnetfilter_queue >= 0.0.1\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libnetfilter_queue >= 0.0.1") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libnetfilter_queue\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libnetfilter_queue") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_NET_FILTER_QUEUE_CFLAGS=`$PKG_CONFIG --cflags "libnetfilter_queue >= 0.0.1" 2>/dev/null`
+  pkg_cv_NET_FILTER_QUEUE_CFLAGS=`$PKG_CONFIG --cflags "libnetfilter_queue" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -1818,12 +1821,12 @@ if test -n "$NET_FILTER_QUEUE_LIBS"; then
     pkg_cv_NET_FILTER_QUEUE_LIBS="$NET_FILTER_QUEUE_LIBS"
  elif test -n "$PKG_CONFIG"; then
     if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libnetfilter_queue >= 0.0.1\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libnetfilter_queue >= 0.0.1") 2>&5
+    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libnetfilter_queue\""; } >&5
+  ($PKG_CONFIG --exists --print-errors "libnetfilter_queue") 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; then
-  pkg_cv_NET_FILTER_QUEUE_LIBS=`$PKG_CONFIG --libs "libnetfilter_queue >= 0.0.1" 2>/dev/null`
+  pkg_cv_NET_FILTER_QUEUE_LIBS=`$PKG_CONFIG --libs "libnetfilter_queue" 2>/dev/null`
 		      test "x$?" != "x0" && pkg_failed=yes
 else
   pkg_failed=yes
@@ -1844,14 +1847,14 @@ else
         _pkg_short_errors_supported=no
 fi
         if test $_pkg_short_errors_supported = yes; then
-	        NET_FILTER_QUEUE_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libnetfilter_queue >= 0.0.1" 2>&1`
+	        NET_FILTER_QUEUE_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libnetfilter_queue" 2>&1`
         else
-	        NET_FILTER_QUEUE_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libnetfilter_queue >= 0.0.1" 2>&1`
+	        NET_FILTER_QUEUE_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libnetfilter_queue" 2>&1`
         fi
 	# Put the nasty error message in config.log where it belongs
 	echo "$NET_FILTER_QUEUE_PKG_ERRORS" >&5
 
-	as_fn_error $? "Package requirements (libnetfilter_queue >= 0.0.1) were not met:
+	as_fn_error $? "Package requirements (libnetfilter_queue) were not met:
 
 $NET_FILTER_QUEUE_PKG_ERRORS
 
@@ -1881,16 +1884,17 @@ else
 	NET_FILTER_QUEUE_LIBS=$pkg_cv_NET_FILTER_QUEUE_LIBS
         { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
-	nfq_found=yes
+	if $PKG_CONFIG --atleast-version=1.0.0 libnetfilter_queue; then
+		echo "netfilter queue version:" `$PKG_CONFIG --modversion libnetfilter_queue`
+	else
+		$as_echo "#define NFQ_V0 1" >>confdefs.h
+
+		echo "old libnetfilter_queue version:" `$PKG_CONFIG --modversion libnetfilter_queue`
+	fi
+
 fi
-NET_FILTER_QUEUE_VERSION=`$PKG_CONFIG --modversion libnetfilter_queue`
 
-# if $NET_FILTER_QUEUE_VERSION < 1; then
-#  echo $NET_FILTER_QUEUE_VERSION
-#else
-echo " ${NET_FILTER_QUEUE_VERSION} test"
-# fi
-
+cp confdefs.h include/disruptor_config.h
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure

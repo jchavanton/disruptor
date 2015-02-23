@@ -10,6 +10,7 @@
 #include <stdbool.h>
 
 #include "include/disruptor.h"
+#include "include/disruptor_config.h"
 #include "include/rtp.h"
 #include "include/scenario.h"
 
@@ -107,7 +108,12 @@ void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 }
 
 int disrupt_ip_packet_analysis(struct nfq_data *nfa, int32_t pkt_id) {
-	char *payload_data;
+	#ifdef NFQ_V0
+		char *payload_data;
+	#else
+		unsigned char *payload_data;
+	#endif
+
 	uint16_t payload_len = nfq_get_payload(nfa, &payload_data);
 	struct iphdr * ip_hdr = (struct iphdr *)(payload_data);
 
