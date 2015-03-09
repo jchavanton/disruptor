@@ -42,7 +42,7 @@ echo " ## disrupting traffic sent trough WAN interface:"
 echo ""
 echo " sudo iptables -A OUTPUT -s $LAN_IP -d $SBC_IP -p all -j NFQUEUE --queue-num $NF_Q"
 echo ""
-echo " ## disrupting traffic reveived trough WAN interface:"
+echo " ## disrupting traffic received trough WAN interface:"
 echo ""
 echo " sudo iptables -A INPUT -d $LAN_IP -s $SBC_IP -p all -j NFQUEUE --queue-num $NF_Q"
 
