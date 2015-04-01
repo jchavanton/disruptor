@@ -67,6 +67,7 @@ struct disrupt_stream_s {
 	struct disrupt_socket_s socket;
 	struct scenario_s scenario;
 	struct timeval start;
+	int32_t id;
 	struct disrupt_stream_s *previous;
 	struct disrupt_stream_s *next;
 };
@@ -86,7 +87,7 @@ void scenario_set_queue_handle(struct scenario_s * s, struct nfq_q_handle *qh);
  * return false if the packet is stored in the scenario telling the core to return
  * return true if the packet is not touched by the scenario 
  * */
-int scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, int32_t stream_duration);
+int scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, int32_t stream_duration, int32_t stream_id);
 
 /*
  * scenario section

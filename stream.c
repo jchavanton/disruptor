@@ -30,16 +30,19 @@ struct disrupt_stream_s * stream_add(struct disrupt_stream_s * stream, uint32_t 
 	stream_new->socket.dst_ip = dst_ip;
 	stream_new->socket.dst_port = dst_port;
 
-	if(!stream)
+	if(!stream) {
+		stream_new->id=1;
 		return stream_new;
+	}
 	stream->previous=stream_new;
 	stream_new->next=stream;
+	stream_new->id=stream_new->next->id+1;
 	return stream_new;
 }
 
 void stream_print(struct disrupt_stream_s * stream){
 	while(stream != NULL){
-		log_info("active stream: src ip:port[%d.%d.%d.%d:%d] dest ip:port[%d.%d.%d.%d:%d] start[%"PRId64"]",
+		log_info("active stream[%d]: src ip:port[%d.%d.%d.%d:%d] dest ip:port[%d.%d.%d.%d:%d] start[%"PRId64"]", stream->id,
 			(stream->socket.src_ip)&0xFF,(stream->socket.src_ip>>8)&0xFF,(stream->socket.src_ip>>16)&0xFF,(stream->socket.src_ip>>24)&0xFF,
 			ntohs(stream->socket.src_port),
 			(stream->socket.dst_ip)&0xFF,(stream->socket.dst_ip>>8)&0xFF,(stream->socket.dst_ip>>16)&0xFF,(stream->socket.dst_ip>>24)&0xFF,

@@ -83,7 +83,7 @@ int disrupt_udp_packet_analysis(char * payload_transport, int32_t pkt_id){
 			log_debug("RTP version[%d] seq[%d] ts[%d] ssrc[%#x] B[%d] duration[%d]", rtp_msg->header.version, packet.seq, packet.ts, packet.ssrc, packet.size, stream_duration);
 		}
 		/* check scenario : if there is and active scenario is will decide what to do with the packet */
-		return scenario_check_pkt(&stream->scenario, &packet, stream_duration);
+		return scenario_check_pkt(&stream->scenario, &packet, stream_duration, stream->id);
 	}
 	return true;
 }
