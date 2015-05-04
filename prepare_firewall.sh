@@ -27,24 +27,29 @@ echo " ## flushing rules:"
 echo " sudo iptables -F"
 
 
+if [ -n "$LAN_IP" ]
+then
+	echo ""
+	echo " ## disrupting traffic sent trough LAN interface:"
+	echo ""
+	echo " sudo iptables -A OUTPUT -s $LAN_IP -d $SBC_IP -p all -j NFQUEUE --queue-num $NF_Q"
+	echo ""
+	echo " ## disrupting traffic received trough LAN interface:"
+	echo ""
+	echo " sudo iptables -A INPUT -d $LAN_IP -s $SBC_IP -p all -j NFQUEUE --queue-num $NF_Q"
+fi
 
-echo ""
-echo " ## disrupting traffic sent trough LAN interface:"
-echo ""
-echo " sudo iptables -A OUTPUT -s $LAN_IP -d $SBC_IP -p all -j NFQUEUE --queue-num $NF_Q"
-echo ""
-echo " ## disrupting traffic received trough LAN interface:"
-echo ""
-echo " sudo iptables -A INPUT -d $LAN_IP -s $SBC_IP -p all -j NFQUEUE --queue-num $NF_Q"
-
-echo ""
-echo " ## disrupting traffic sent trough WAN interface:"
-echo ""
-echo " sudo iptables -A OUTPUT -s $LAN_IP -d $SBC_IP -p all -j NFQUEUE --queue-num $NF_Q"
-echo ""
-echo " ## disrupting traffic received trough WAN interface:"
-echo ""
-echo " sudo iptables -A INPUT -d $LAN_IP -s $SBC_IP -p all -j NFQUEUE --queue-num $NF_Q"
+if [ -n "$WAN_IP" ]
+then
+	echo ""
+	echo " ## disrupting traffic sent trough WAN interface:"
+	echo ""
+	echo " sudo iptables -A OUTPUT -s $LAN_IP -d $SBC_IP -p all -j NFQUEUE --queue-num $NF_Q"
+	echo ""
+	echo " ## disrupting traffic received trough WAN interface:"
+	echo ""
+	echo " sudo iptables -A INPUT -d $LAN_IP -s $SBC_IP -p all -j NFQUEUE --queue-num $NF_Q"
+fi
 
 echo ""
 echo " ## starting disruptor:"
