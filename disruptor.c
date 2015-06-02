@@ -14,6 +14,8 @@
 #include "include/rtp.h"
 #include "include/scenario.h"
 
+#define DATALINK_OVERHEAD 17
+
 /* packet, scenario and logging */
 
 struct scenario_s *scenario;
@@ -68,29 +70,47 @@ int disrupt_udp_packet_analysis(char * payload_transport, int32_t pkt_id){
 	unsigned char * payload_app = payload_transport + sizeof(struct udphdr);
 
 	/* RTP DETECTION */
-	rtp_msg_t * rtp_msg = (rtp_msg_t *) payload_app;
-	if(rtp_msg->header.version == 2){
+
+	if( (ntohs(udp_hdr->source) % 2) ){
+		rtcp_msg_t * rtcp_msg = (rtcp_msg_t *) payload_app;
+		if(rtcp_msg->header.pt == 200 || rtcp_msg->header.pt == 201){
+			packet.rtcp = true;
+			packet.rtp=false;
+			packet.ssrc = rtcp_msg->header.ssrc;
+			log_debug("RTCP packet [%d]", rtcp_msg->header.pt);
+		} else {
+			log_debug("non RTCP packet received [%d]", rtcp_msg->header.pt);
+			return true;
+		}
+	} else {
+		rtp_msg_t * rtp_msg = (rtp_msg_t *) payload_app;
+		if(rtp_msg->header.version != 2){
+			log_debug("non RTP packet received [%d]", rtp_msg->header.version);
+			return true;
+		}
+		packet.pt = rtp_msg->header.pt;
 		packet.seq = ntohs(rtp_msg->header.seq);
 		packet.ssrc = ntohl(rtp_msg->header.ssrc);
 		packet.ts = ntohl(rtp_msg->header.ts);
 		packet.rtp = true;
-		packet.pkt_id = pkt_id;
-
-		struct timeval t;
-		gettimeofday(&t,NULL);
-		int32_t stream_duration = (int32_t)(t.tv_sec - stream->start.tv_sec);
+		packet.rtcp = false;
 		if(packet.seq%100 == 0){
-			log_debug("RTP version[%d] seq[%d] ts[%d] ssrc[%#x] B[%d] duration[%d]", rtp_msg->header.version, packet.seq, packet.ts, packet.ssrc, packet.size, stream_duration);
+		log_debug("RTP version[%d] pt[%d] seq[%d] ts[%d] ssrc[%#x] B[%d]",
+                                  packet.pt, rtp_msg->header.version, packet.seq, packet.ts, packet.ssrc, packet.size);
 		}
-		/* check scenario : if there is and active scenario is will decide what to do with the packet */
-		return scenario_check_pkt(&stream->scenario, &packet, stream_duration, stream->id);
 	}
-	return true;
+	packet.pkt_id = pkt_id;
+
+	struct timeval t;
+	gettimeofday(&t,NULL);
+	int32_t stream_duration = (int32_t)(t.tv_sec - stream->start.tv_sec);
+
+	/* check scenario : if there is and active scenario is will decide what to do with the packet */
+	return scenario_check_pkt(&stream->scenario, &packet, stream_duration, stream->id);
 }
 
 void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 
-	if( !(ntohs(udp_hdr->source) % 2) ){
 		stream = stream_get(stream_head, ip_hdr->saddr, udp_hdr->source, ip_hdr->daddr, udp_hdr->dest);
 		if( !stream ){
 			stream = stream_head = stream_add(stream_head, ip_hdr->saddr, udp_hdr->source, ip_hdr->daddr, udp_hdr->dest);
@@ -104,7 +124,6 @@ void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 			stream_print(stream_head);
 			log_info("****************************************");
 		}
-	}
 }
 
 int disrupt_ip_packet_analysis(struct nfq_data *nfa, int32_t pkt_id) {
@@ -116,6 +135,8 @@ int disrupt_ip_packet_analysis(struct nfq_data *nfa, int32_t pkt_id) {
 
 	uint16_t payload_len = nfq_get_payload(nfa, &payload_data);
 	struct iphdr * ip_hdr = (struct iphdr *)(payload_data);
+
+	packet.size= payload_len + DATALINK_OVERHEAD;
 
 	/* Detect transport protocol */
 	if ( ip_hdr->protocol == IPPROTO_TCP ) {
@@ -193,7 +214,6 @@ void disruptor_nfq_handle_traffic() {
 
 	d_nfq.fd = nfq_fd(d_nfq.h);
 	while ((d_nfq.recv_pkt_sz = recv(d_nfq.fd, d_nfq.buf, sizeof(d_nfq.buf), 0)) >= 0) {
-			packet.size=d_nfq.recv_pkt_sz;
 			nfq_handle_packet(d_nfq.h, d_nfq.buf, d_nfq.recv_pkt_sz); /* send packet to callback */
 	}
 }

@@ -14,7 +14,8 @@ static const int32_t q_max_pkt = 10000; // max packet queue size for the scenari
 enum scenario_action_e {
 	A_NONE,
 	A_JITTER,
-	A_LOSS
+	A_LOSS,
+	A_LOSS_RTCP
 };
 
 enum scenario_problem_state_e {
@@ -26,8 +27,10 @@ enum scenario_problem_state_e {
 
 typedef struct disrupt_packet_s {
 	int16_t size;
+	uint8_t pt;
 	int32_t pkt_id;
 	bool rtp;
+	bool rtcp;
 	uint32_t ssrc;
 	uint16_t seq;
 	uint32_t ts;
@@ -96,5 +99,6 @@ int scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, 
 int scenario_action_none(struct scenario_s * s, struct disrupt_packet_s * packet);
 int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * packet);
 int scenario_action_loss(struct scenario_s * s, struct disrupt_packet_s * packet);
+int scenario_action_loss_rtcp(struct scenario_s * s, struct disrupt_packet_s * packet);
 
 #endif

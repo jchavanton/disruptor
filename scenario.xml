@@ -13,7 +13,7 @@
 -->
 
 <scenario>
-       <period duration="5"><action name="none" rand="20"/></period>
+       <period duration="60"><action name="loss" rand="100"/></period>
        <period duration="5"><action name="none" rand="20"/></period>
        <period duration="5"><action name="none" rand="20"/></period>
        <period duration="5"><action name="none" rand="20"/></period>

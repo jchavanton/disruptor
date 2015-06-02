@@ -41,6 +41,9 @@ void scenario_set_action(struct scenario_s * s){
 		case A_LOSS:
 			s->scenario_action = scenario_action_loss;
 			break;
+		case A_LOSS_RTCP:
+			s->scenario_action = scenario_action_loss_rtcp;
+			break;
 		default :
 			s->scenario_action = NULL;
 			break;
@@ -87,6 +90,10 @@ bool scenario_read_period_xml(struct scenario_s * s, int32_t stream_duration) {
 		log_debug(" max_burst[%d] random_occurence[%d]", s->init_max_burst, s->init_random_occurence);
 	} else if(strcasecmp(action_name,"loss") == 0){
 		s->action = A_LOSS;
+		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
+		log_debug(" percentage[%d]", s->init_random_occurence);
+	} else if(strcasecmp(action_name,"loss_rtcp") == 0){
+		s->action = A_LOSS_RTCP;
 		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
 		log_debug(" percentage[%d]", s->init_random_occurence);
 	} else {

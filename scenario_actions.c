@@ -32,6 +32,21 @@ int scenario_action_loss(struct scenario_s * s, struct disrupt_packet_s * p){
 	return true;
 }
 
+int scenario_action_loss_rtcp(struct scenario_s * s, struct disrupt_packet_s * p){
+	int16_t var_rand = 0;
+	if(!p->rtcp) {
+		return true;
+	}
+	var_rand = sc_random(100);
+	if( var_rand <= s->init_random_occurence ){
+		log_debug("random_scenario[loss_rtcp]: dropping RTCP pkt_id[%d] ssrc[%#x]", p->pkt_id, p->ssrc);
+		s->period_pkt_loss++;
+		nfq_set_verdict(s->qh, p->pkt_id, NF_DROP, 0, NULL);
+		return false;
+	}
+	return true;
+}
+
 int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 	int16_t var_rand = 0;
 	s->period_pkt_count++;
