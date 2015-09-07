@@ -41,6 +41,9 @@ void scenario_set_action(struct scenario_s * s){
 		case A_LOSS:
 			s->scenario_action = scenario_action_loss;
 			break;
+		case A_BURST_LOSS:
+			s->scenario_action = scenario_action_burst_loss;
+			break;
 		case A_LOSS_RTCP:
 			s->scenario_action = scenario_action_loss_rtcp;
 			break;
@@ -85,6 +88,11 @@ bool scenario_read_period_xml(struct scenario_s * s, int32_t stream_duration) {
 	log_debug("scenario_read_xml: period[%ss] action[%s]", period_duration, action_name);
 	if(strcasecmp(action_name,"jitter") == 0){
 		s->action = A_JITTER;
+		s->init_max_burst = atoi(ezxml_attr(action, "max"));
+		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
+		log_debug(" max_burst[%d] random_occurence[%d]", s->init_max_burst, s->init_random_occurence);
+	} else if(strcasecmp(action_name,"burst_loss") == 0){
+		s->action = A_BURST_LOSS;
 		s->init_max_burst = atoi(ezxml_attr(action, "max"));
 		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
 		log_debug(" max_burst[%d] random_occurence[%d]", s->init_max_burst, s->init_random_occurence);

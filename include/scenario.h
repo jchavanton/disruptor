@@ -15,6 +15,7 @@ enum scenario_action_e {
 	A_NONE,
 	A_JITTER,
 	A_LOSS,
+	A_BURST_LOSS,
 	A_LOSS_RTCP
 };
 
@@ -99,6 +100,7 @@ int scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, 
 int scenario_action_none(struct scenario_s * s, struct disrupt_packet_s * packet);
 int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * packet);
 int scenario_action_loss(struct scenario_s * s, struct disrupt_packet_s * packet);
+int scenario_action_burst_loss(struct scenario_s * s, struct disrupt_packet_s * packet);
 int scenario_action_loss_rtcp(struct scenario_s * s, struct disrupt_packet_s * packet);
 
 #endif
