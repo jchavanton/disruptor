@@ -35,6 +35,7 @@ typedef struct disrupt_packet_s {
 	uint32_t ssrc;
 	uint16_t seq;
 	uint32_t ts;
+	struct disrupt_stream_s *stream;
 } disrupt_packet_t;
 
 struct scenario_s {

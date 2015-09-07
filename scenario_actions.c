@@ -60,18 +60,16 @@ int scenario_action_burst_loss(struct scenario_s * s, struct disrupt_packet_s * 
 	}
 
 	if(s->pb_state == PB_NONE) {
-		log_debug("scenario_action[burst_loss]: no problem pkt_id[%d] seq[%d] period_cnt[%d]", p->pkt_id, p->seq , s->period_pkt_count);
+		log_debug("stream[%d]scenario_action[burst_loss]: no problem pkt_id[%d] seq[%d] period_cnt[%d]", p->stream->id, p->pkt_id, p->seq , s->period_pkt_count);
 	} else if(s->pb_state == PB_INIT) {
 		s->pb_pkt_pos = 0;
 		s->pb_pkt_start = s->period_pkt_count;
 		s->pb_state = PB_ACTIVE;
 		s->pb_pkt_max = sc_random(s->init_max_burst); // in this scenario this is a random amount of packet delayed emulate congestion
-		log_debug("scenario_action[burst_loss]: problem initialized affecting[%d] packets",s->pb_pkt_max);
+		log_notice("stream[%d]scenario_action[burst_loss]: problem initialized affecting[%d] packets", p->stream->id, s->pb_pkt_max);
 	}
 
 	if(s->pb_state == PB_ACTIVE){ // pb is initialized, start queing packets
-		//s->queue_delay[s->pb_pkt_pos] = p->pkt_id;
-		//s->queue_seq[s->pb_pkt_pos] = p->seq;
 		log_debug("scenario_action[burst_loss]: dropping[%d/%d] pkt_id[%d] seq[%d] period_cnt[%d]", s->pb_pkt_pos, s->pb_pkt_max, p->pkt_id, p->seq, s->period_pkt_count);
 		s->period_pkt_loss++;
 		nfq_set_verdict(s->qh, p->pkt_id, NF_DROP, 0, NULL);

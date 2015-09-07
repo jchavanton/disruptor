@@ -124,6 +124,7 @@ void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 			stream_print(stream_head);
 			log_info("****************************************");
 		}
+		packet.stream = stream;
 }
 
 int disrupt_ip_packet_analysis(struct nfq_data *nfa, int32_t pkt_id) {
