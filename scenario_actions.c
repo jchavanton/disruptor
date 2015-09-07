@@ -114,7 +114,7 @@ int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 		s->queue_seq[s->pb_pkt_pos] = p->seq;
 		s->period_pkt_delayed++;
 
-		log_debug("stream[%d]scenario_action[jitter]: queueing[%d/%d] pkt_id[%d] seq[%d] period_cnt[%d]", p->stream->id, s->pb_pkt_pos, s->pb_pkt_max, p->pkt_id, p->seq, s->period_pkt_count);
+		log_debug("stream[%d]scenario_action[jitter]: queueing[%d/%d] pkt_id[%d] seq[%d] period_cnt[%d]", p->stream->id, s->pb_pkt_pos, s->pb_pkt_max, s->queue_delay[s->pb_pkt_pos], p->seq, s->period_pkt_count);
 		if(s->pb_pkt_pos == s->pb_pkt_max){
 			s->pb_state = PB_STOP;
 		} else {
@@ -124,12 +124,12 @@ int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 	} else if(s->pb_state == PB_STOP) {  // release the packets
 		uint32_t pkt_id;
 		int i;
-		log_debug("stream[%d]scenario_action[jitter]: delayed packets [%d]", s->pb_pkt_pos);
+		log_debug("stream[%d]scenario_action[jitter]: delayed packets [%d]", p->stream, s->pb_pkt_pos);
 		for (i=0;i<=s->pb_pkt_pos;i++){
 			pkt_id = s->queue_delay[i];
 			log_debug("stream[%d]scenario_action[jitter]: release delayed packet[%d/%d] id[%d] seq[%d] period_cnt[%d]",
-                                                       p->stream->id, i, s->pb_pkt_max, p->pkt_id, s->queue_seq[i], s->period_pkt_count);
-			nfq_set_verdict(s->qh, p->pkt_id , NF_ACCEPT, 0, NULL);
+                                                       p->stream->id, i, s->pb_pkt_max, pkt_id, s->queue_seq[i], s->period_pkt_count);
+			nfq_set_verdict(s->qh, pkt_id , NF_ACCEPT, 0, NULL);
 		}
 		s->pb_state = PB_NONE;
 	}
