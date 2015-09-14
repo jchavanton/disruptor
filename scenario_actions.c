@@ -47,6 +47,45 @@ int scenario_action_loss_rtcp(struct scenario_s * s, struct disrupt_packet_s * p
 	return true;
 }
 
+int scenario_action_burst_loss(struct scenario_s * s, struct disrupt_packet_s * p){
+	int16_t var_rand = 0;
+	s->period_pkt_count++;
+
+	if(s->pb_state == PB_NONE) {
+		var_rand = sc_random(s->init_random_occurence);
+	}
+
+	if ( (var_rand==1) && (s->pb_state == PB_NONE) ) {   // scenario random occurance
+		s->pb_state = PB_INIT;
+	}
+
+	if(s->pb_state == PB_NONE) {
+		log_debug("stream[%d]scenario_action[burst_loss]: no problem pkt_id[%d] seq[%d] period_cnt[%d]", p->stream->id, p->pkt_id, p->seq , s->period_pkt_count);
+	} else if(s->pb_state == PB_INIT) {
+		s->pb_pkt_pos = 0;
+		s->pb_pkt_start = s->period_pkt_count;
+		s->pb_state = PB_ACTIVE;
+		s->pb_pkt_max = sc_random(s->init_max_burst); // in this scenario this is a random amount of packet delayed emulate congestion
+		log_notice("stream[%d]scenario_action[burst_loss]: problem initialized affecting[%d] packets", p->stream->id, s->pb_pkt_max);
+	}
+
+	if(s->pb_state == PB_ACTIVE){ // pb is initialized, start queing packets
+		log_debug("stream[%d]scenario_action[burst_loss]: dropping[%d/%d] pkt_id[%d] seq[%d] period_cnt[%d]", p->stream->id, s->pb_pkt_pos, s->pb_pkt_max, p->pkt_id, p->seq, s->period_pkt_count);
+		s->period_pkt_loss++;
+		nfq_set_verdict(s->qh, p->pkt_id, NF_DROP, 0, NULL);
+		if(s->pb_pkt_pos == s->pb_pkt_max){
+			s->pb_state = PB_STOP;
+		} else {
+			s->pb_pkt_pos++;
+		}
+		return false;
+	} else if(s->pb_state == PB_STOP) {
+		s->pb_state = PB_NONE;
+	}
+
+	return true;
+}
+
 int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 	int16_t var_rand = 0;
 	s->period_pkt_count++;
@@ -60,13 +99,13 @@ int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 	}
 
 	if(s->pb_state == PB_NONE) {
-		log_debug("scenario_action[jitter]: no problem pkt_id[%d] seq[%d] period_cnt[%d]", p->pkt_id, p->seq , s->period_pkt_count);
+		log_debug("stream[%d]scenario_action[jitter]: no problem pkt_id[%d] seq[%d] period_cnt[%d]", p->stream->id, p->pkt_id, p->seq , s->period_pkt_count);
 	} else if(s->pb_state == PB_INIT) {
 		s->pb_pkt_pos = 0;
 		s->pb_pkt_start = s->period_pkt_count;
 		s->pb_state = PB_ACTIVE;
 		s->pb_pkt_max = sc_random(s->init_max_burst); // in this scenario this is a random amount of packet delayed emulate congestion
-		log_debug("scenario_action[jitter]: problem initialized affecting[%d] packets",s->pb_pkt_max);
+		log_debug("stream[%d]scenario_action[jitter]: problem initialized affecting[%d] packets", p->stream->id, s->pb_pkt_max);
 
 	}
 
@@ -75,7 +114,7 @@ int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 		s->queue_seq[s->pb_pkt_pos] = p->seq;
 		s->period_pkt_delayed++;
 
-		log_debug("scenario_action[jitter]: queueing[%d/%d] pkt_id[%d] seq[%d] period_cnt[%d]", s->pb_pkt_pos, s->pb_pkt_max, p->pkt_id, p->seq, s->period_pkt_count);
+		log_debug("stream[%d]scenario_action[jitter]: queueing[%d/%d] pkt_id[%d] seq[%d] period_cnt[%d]", p->stream->id, s->pb_pkt_pos, s->pb_pkt_max, s->queue_delay[s->pb_pkt_pos], p->seq, s->period_pkt_count);
 		if(s->pb_pkt_pos == s->pb_pkt_max){
 			s->pb_state = PB_STOP;
 		} else {
@@ -85,10 +124,12 @@ int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 	} else if(s->pb_state == PB_STOP) {  // release the packets
 		uint32_t pkt_id;
 		int i;
+		log_debug("stream[%d]scenario_action[jitter]: delayed packets [%d]", p->stream, s->pb_pkt_pos);
 		for (i=0;i<=s->pb_pkt_pos;i++){
 			pkt_id = s->queue_delay[i];
-			log_debug("scenario_action[jitter]: release delayed packet[%d/%d] id[%d] seq[%d] period_cnt[%d]", i, s->pb_pkt_max, p->pkt_id, s->queue_seq[i], s->period_pkt_count);
-			nfq_set_verdict(s->qh, p->pkt_id , NF_ACCEPT, 0, NULL);
+			log_debug("stream[%d]scenario_action[jitter]: release delayed packet[%d/%d] id[%d] seq[%d] period_cnt[%d]",
+                                                       p->stream->id, i, s->pb_pkt_max, pkt_id, s->queue_seq[i], s->period_pkt_count);
+			nfq_set_verdict(s->qh, pkt_id , NF_ACCEPT, 0, NULL);
 		}
 		s->pb_state = PB_NONE;
 	}

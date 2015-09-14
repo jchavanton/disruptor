@@ -15,6 +15,7 @@
 #include "include/scenario.h"
 
 #define DATALINK_OVERHEAD 17
+#define DISRUPTOR_MAX_Q_LEN 1000
 
 /* packet, scenario and logging */
 
@@ -124,6 +125,7 @@ void disrupt_stream_detection(struct iphdr * ip_hdr, struct udphdr * udp_hdr){
 			stream_print(stream_head);
 			log_info("****************************************");
 		}
+		packet.stream = stream;
 }
 
 int disrupt_ip_packet_analysis(struct nfq_data *nfa, int32_t pkt_id) {
@@ -207,6 +209,11 @@ void disruptor_nfq_bind() {
 		log_error("can't set packet_copy mode");
 		exit(1);
 	}
+
+	if(nfq_set_queue_maxlen(d_nfq.qh, (uint32_t)DISRUPTOR_MAX_Q_LEN) < 0){
+		log_error("error setting maximum queue size to [%d]", DISRUPTOR_MAX_Q_LEN);
+		exit(1);
+	}
 }
 
 void disruptor_nfq_handle_traffic() {
@@ -234,6 +241,7 @@ void disruptor_command_line_options(int argc, char **argv){
 				exit(1);
 				break;
 			case 'f':
+			case 's':
 				scenario_filename = optarg;
 				break;
 			default:

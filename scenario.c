@@ -41,6 +41,9 @@ void scenario_set_action(struct scenario_s * s){
 		case A_LOSS:
 			s->scenario_action = scenario_action_loss;
 			break;
+		case A_BURST_LOSS:
+			s->scenario_action = scenario_action_burst_loss;
+			break;
 		case A_LOSS_RTCP:
 			s->scenario_action = scenario_action_loss_rtcp;
 			break;
@@ -88,6 +91,11 @@ bool scenario_read_period_xml(struct scenario_s * s, int32_t stream_duration) {
 		s->init_max_burst = atoi(ezxml_attr(action, "max"));
 		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
 		log_debug(" max_burst[%d] random_occurence[%d]", s->init_max_burst, s->init_random_occurence);
+	} else if(strcasecmp(action_name,"burst_loss") == 0){
+		s->action = A_BURST_LOSS;
+		s->init_max_burst = atoi(ezxml_attr(action, "max"));
+		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
+		log_debug(" max_burst[%d] random_occurence[%d]", s->init_max_burst, s->init_random_occurence);
 	} else if(strcasecmp(action_name,"loss") == 0){
 		s->action = A_LOSS;
 		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
@@ -110,18 +118,23 @@ int scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, 
 	s->period_bytes_received = s->period_bytes_received + packet->size;
 	if( stream_duration - s->period_start >= s->period_duration){
 		int32_t bps=0;
-		//if(s->period_duration > 0){
-		//	bps = s->period_bandwidth / s->period_duration;
-		//}
+		/* some scenario actions may need to release packets before ending the period transition */
+
+		if(s->pb_state == PB_ACTIVE){
+			log_debug("scenario period completed stopping action active state[%d]", s->pb_state);
+			s->pb_state = PB_STOP;
+			s->scenario_action(s, packet);
+		}
+
 		log_notice("scenario period completed [%ds]to[%ds] stream[%d] action[%d]loss[%d%%]delayed[%d]received[%d]bytes[%d] bandwidth[%dKbps]",
                         s->period_start, stream_duration, stream_id, s->action,
                         s->period_pkt_loss*100/s->period_pkt_count,
                         s->period_pkt_delayed,
                         s->period_pkt_count,
                         s->period_bytes_received,
-                        s->period_bytes_received*8/(s->period_duration*1024),
-                        s->action
+                        s->period_bytes_received*8/(s->period_duration*1024)
                 );
+
 		if(!scenario_read_period_xml(s, stream_duration)) {
 			//s->action=NONE;
 			//scenario_set_action(s);

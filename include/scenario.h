@@ -15,6 +15,7 @@ enum scenario_action_e {
 	A_NONE,
 	A_JITTER,
 	A_LOSS,
+	A_BURST_LOSS,
 	A_LOSS_RTCP
 };
 
@@ -34,6 +35,7 @@ typedef struct disrupt_packet_s {
 	uint32_t ssrc;
 	uint16_t seq;
 	uint32_t ts;
+	struct disrupt_stream_s *stream;
 } disrupt_packet_t;
 
 struct scenario_s {
@@ -99,6 +101,7 @@ int scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, 
 int scenario_action_none(struct scenario_s * s, struct disrupt_packet_s * packet);
 int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * packet);
 int scenario_action_loss(struct scenario_s * s, struct disrupt_packet_s * packet);
+int scenario_action_burst_loss(struct scenario_s * s, struct disrupt_packet_s * packet);
 int scenario_action_loss_rtcp(struct scenario_s * s, struct disrupt_packet_s * packet);
 
 #endif
