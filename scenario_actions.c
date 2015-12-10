@@ -125,11 +125,21 @@ int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 		uint32_t pkt_id;
 		int i;
 		log_debug("stream[%d]scenario_action[jitter]: delayed packets [%d]", p->stream, s->pb_pkt_pos);
-		for (i=0;i<=s->pb_pkt_pos;i++){
-			pkt_id = s->queue_delay[i];
-			log_debug("stream[%d]scenario_action[jitter]: release delayed packet[%d/%d] id[%d] seq[%d] period_cnt[%d]",
+
+		if(s->params & JITTER_OUT_OF_ORDER) {
+			for (i=s->pb_pkt_pos;i>=0;i--){
+				pkt_id = s->queue_delay[i];
+				log_debug("stream[%d]scenario_action[jitter]: release(outoforder) delayed packet[%d/%d] id[%d] seq[%d] period_cnt[%d]",
                                                        p->stream->id, i, s->pb_pkt_max, pkt_id, s->queue_seq[i], s->period_pkt_count);
-			nfq_set_verdict(s->qh, pkt_id , NF_ACCEPT, 0, NULL);
+				nfq_set_verdict(s->qh, pkt_id , NF_ACCEPT, 0, NULL);
+			}
+		} else {
+			for (i=0;i<=s->pb_pkt_pos;i++){
+				pkt_id = s->queue_delay[i];
+				log_debug("stream[%d]scenario_action[jitter]: release delayed packet[%d/%d] id[%d] seq[%d] period_cnt[%d]",
+                                                       p->stream->id, i, s->pb_pkt_max, pkt_id, s->queue_seq[i], s->period_pkt_count);
+				nfq_set_verdict(s->qh, pkt_id , NF_ACCEPT, 0, NULL);
+			}
 		}
 		s->pb_state = PB_NONE;
 	}

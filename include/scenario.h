@@ -38,6 +38,8 @@ typedef struct disrupt_packet_s {
 	struct disrupt_stream_s *stream;
 } disrupt_packet_t;
 
+#define JITTER_OUT_OF_ORDER (1 << 0)
+
 struct scenario_s {
 	ezxml_t scenario_xml;
 	ezxml_t scenario_period_xml;
@@ -59,6 +61,7 @@ struct scenario_s {
 	int32_t period_pkt_loss;
 	int32_t period_pkt_delayed;
 	char * filename;
+	int32_t params;
 };
 
 struct disrupt_socket_s {

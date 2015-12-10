@@ -90,6 +90,9 @@ bool scenario_read_period_xml(struct scenario_s * s, int32_t stream_duration) {
 		s->action = A_JITTER;
 		s->init_max_burst = atoi(ezxml_attr(action, "max"));
 		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
+		if( atoi(ezxml_attr(action, "outoforder"))){
+			s->params |= JITTER_OUT_OF_ORDER;
+		}
 		log_debug(" max_burst[%d] random_occurence[%d]", s->init_max_burst, s->init_random_occurence);
 	} else if(strcasecmp(action_name,"burst_loss") == 0){
 		s->action = A_BURST_LOSS;
