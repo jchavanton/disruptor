@@ -23,6 +23,7 @@ void scenario_period_init(struct scenario_s *s){
 	s->pb_state = PB_NONE;              // starting without active problem
 	s->pb_pkt_pos = 0;
 	s->pb_pkt_start = 0;
+	s->pb_pkt_stop = 0;
 	s->pb_pkt_max = 0;
 	s->period_pkt_count = 0;
 	s->period_pkt_delayed = 0;
