@@ -20,6 +20,16 @@
 -f scenario file name
 -l log level: 0=error, 1=info, 2=notice, 3=debug
 ```
+###  action jitter ###
+
+burst_max : maximum random size of delayed burst in packets
+interval_max : maximum random  interval between burst in packets
+
+burst_size : size of delayed burst in packets
+interval_size : interval between burst in packets
+
+outoforder : burst out of order
+
 ### XML scenario files example
 ```
 <?xml version="1.0"?>

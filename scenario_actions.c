@@ -23,7 +23,7 @@ int scenario_action_none(struct scenario_s * s, struct disrupt_packet_s * p){
 int scenario_action_loss(struct scenario_s * s, struct disrupt_packet_s * p){
 	int16_t var_rand = 0;
 	var_rand = sc_random(100);
-	if( var_rand <= s->init_random_occurence ){
+	if( var_rand <= s->init_interval_occurence ){
 		log_debug("random_scenario[loss]: dropping pkt_id[%d] seq[%d]", p->pkt_id, p->seq);
 		s->period_pkt_loss++;
 		nfq_set_verdict(s->qh, p->pkt_id, NF_DROP, 0, NULL);
@@ -38,7 +38,7 @@ int scenario_action_loss_rtcp(struct scenario_s * s, struct disrupt_packet_s * p
 		return true;
 	}
 	var_rand = sc_random(100);
-	if( var_rand <= s->init_random_occurence ){
+	if( var_rand <= s->init_interval_occurence ){
 		log_debug("random_scenario[loss_rtcp]: dropping RTCP pkt_id[%d] ssrc[%#x]", p->pkt_id, p->ssrc);
 		s->period_pkt_loss++;
 		nfq_set_verdict(s->qh, p->pkt_id, NF_DROP, 0, NULL);
@@ -47,12 +47,11 @@ int scenario_action_loss_rtcp(struct scenario_s * s, struct disrupt_packet_s * p
 	return true;
 }
 
-int scenario_action_burst_loss(struct scenario_s * s, struct disrupt_packet_s * p){
+int scenario_action_burst_loss(struct scenario_s * s, struct disrupt_packet_s * p) {
 	int16_t var_rand = 0;
-	s->period_pkt_count++;
 
 	if(s->pb_state == PB_NONE) {
-		var_rand = sc_random(s->init_random_occurence);
+		var_rand = sc_random(s->init_interval_occurence);
 	}
 
 	if ( (var_rand==1) && (s->pb_state == PB_NONE) ) {   // scenario random occurance
@@ -88,10 +87,16 @@ int scenario_action_burst_loss(struct scenario_s * s, struct disrupt_packet_s * 
 
 int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 	int16_t var_rand = 0;
-	s->period_pkt_count++;
 
 	if(s->pb_state == PB_NONE) {
-		var_rand = sc_random(s->init_random_occurence);
+		if(s->params & JITTER_FIXED_BURST_INTERVAL) {
+		//	log_debug("stream[%d]scenario_action[jitter][%d]-[%d]>=[%d]: no problem pkt_id[%d] seq[%d] period_cnt[%d]",
+                //                   p->stream->id, s->period_pkt_count, s->pb_pkt_stop, s->init_interval_occurence, p->pkt_id, p->seq , s->period_pkt_count);
+			if(s->period_pkt_count - s->pb_pkt_stop >= s->init_interval_occurence)
+				var_rand = 1;
+		} else {
+			var_rand = sc_random(s->init_interval_occurence);
+		}
 	}
 
 	if ( (var_rand==1) && (s->pb_state == PB_NONE) ) {   // scenario random occurance
@@ -104,9 +109,12 @@ int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 		s->pb_pkt_pos = 0;
 		s->pb_pkt_start = s->period_pkt_count;
 		s->pb_state = PB_ACTIVE;
-		s->pb_pkt_max = sc_random(s->init_max_burst); // in this scenario this is a random amount of packet delayed emulate congestion
+		if(s->params & JITTER_FIXED_BURST_LEN) {
+			s->pb_pkt_max = s->init_max_burst;
+		} else {
+			s->pb_pkt_max = sc_random(s->init_max_burst); // in this scenario this is a random amount of packet delayed emulate congestion
+		}
 		log_debug("stream[%d]scenario_action[jitter]: problem initialized affecting[%d] packets", p->stream->id, s->pb_pkt_max);
-
 	}
 
 	if(s->pb_state == PB_ACTIVE){ // pb is initialized, start queing packets
@@ -116,6 +124,7 @@ int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 
 		log_debug("stream[%d]scenario_action[jitter]: queueing[%d/%d] pkt_id[%d] seq[%d] period_cnt[%d]", p->stream->id, s->pb_pkt_pos, s->pb_pkt_max, s->queue_delay[s->pb_pkt_pos], p->seq, s->period_pkt_count);
 		if(s->pb_pkt_pos == s->pb_pkt_max){
+			s->pb_pkt_stop = s->period_pkt_count;
 			s->pb_state = PB_STOP;
 		} else {
 			s->pb_pkt_pos++;

@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+
+<!--
+     simulate jitter caused by "congestion" resulting in random delayed packets burst
+     action: jitter
+     rand: percentage of chances that a problem occurrence start at each packet
+     max: maximum burst size in packets
+     <action name="jitter" rand="50" max="125"/>
+
+     simulate none
+     action: none
+     rand: percentage nones
+-->
+
+<scenario>
+       <period duration="15"><action name="jitter" rand="50" max="100" outoforder="0"/></period>
+       <period duration="15"><action name="jitter" rand="50" max="100" outoforder="0"/></period>
+       <period duration="15"><action name="jitter" rand="50" max="100" outoforder="0"/></period>
+       <period duration="15"><action name="jitter" rand="50" max="100" outoforder="0"/></period>
+       <period duration="15"><action name="jitter" rand="50" max="100" outoforder="0"/></period>
+       <period duration="15"><action name="jitter" rand="50" max="100" outoforder="0"/></period>
+       <period duration="15"><action name="jitter" rand="50" max="100" outoforder="0"/></period>
+       <period duration="15"><action name="jitter" rand="50" max="100" outoforder="0"/></period>
+       <period duration="15"><action name="jitter" rand="50" max="100" outoforder="0"/></period>
+       <period duration="15"><action name="jitter" rand="50" max="100" outoforder="0"/></period>
+       <period duration="15"><action name="none"/></period>
+       <period duration="15"><action name="none"/></period>
+       <period duration="15"><action name="none"/></period>
+       <period duration="15"><action name="none"/></period>
+       <period duration="3600">
+                <action name="none"/>
+       </period>
+</scenario>

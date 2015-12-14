@@ -88,25 +88,41 @@ bool scenario_read_period_xml(struct scenario_s * s, int32_t stream_duration) {
 	log_debug("scenario_read_xml: period[%ss] action[%s]", period_duration, action_name);
 	if(strcasecmp(action_name,"jitter") == 0){
 		s->action = A_JITTER;
-		s->init_max_burst = atoi(ezxml_attr(action, "max"));
-		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
-		if( atoi(ezxml_attr(action, "outoforder"))){
-			s->params |= JITTER_OUT_OF_ORDER;
+		if(ezxml_attr(action, "burst_max")) {
+			s->init_max_burst = atoi(ezxml_attr(action, "burst_max"));
+			s->params &= ~JITTER_FIXED_BURST_LEN;
+		} else if(ezxml_attr(action, "burst_size")){
+			s->init_max_burst = atoi(ezxml_attr(action, "burst_size"));
+			s->params |= JITTER_FIXED_BURST_LEN;
 		}
-		log_debug(" max_burst[%d] random_occurence[%d]", s->init_max_burst, s->init_random_occurence);
+		if(ezxml_attr(action, "interval_max")) {
+			s->init_interval_occurence = atoi(ezxml_attr(action, "interval_max"));
+			s->params &= ~JITTER_FIXED_BURST_INTERVAL;
+		} else if(ezxml_attr(action, "interval_size")) {
+			s->init_interval_occurence = atoi(ezxml_attr(action, "interval_size"));
+			s->params |= JITTER_FIXED_BURST_INTERVAL;
+		}
+		if(ezxml_attr(action, "outoforder")){
+			s->params |= JITTER_OUT_OF_ORDER;
+		} else {
+			s->params &= ~JITTER_OUT_OF_ORDER;
+		}
+		log_debug(" burst[%d]random[%d] interval[%d]random[%d]",
+                            s->init_max_burst, (s->params & JITTER_FIXED_BURST_LEN)?0:1,
+                            s->init_interval_occurence, (s->params & JITTER_FIXED_BURST_INTERVAL)?0:1);
 	} else if(strcasecmp(action_name,"burst_loss") == 0){
 		s->action = A_BURST_LOSS;
 		s->init_max_burst = atoi(ezxml_attr(action, "max"));
-		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
-		log_debug(" max_burst[%d] random_occurence[%d]", s->init_max_burst, s->init_random_occurence);
+		s->init_interval_occurence = atoi(ezxml_attr(action, "rand"));
+		log_debug(" max_burst[%d] random_occurence[%d]", s->init_max_burst, s->init_interval_occurence);
 	} else if(strcasecmp(action_name,"loss") == 0){
 		s->action = A_LOSS;
-		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
-		log_debug(" percentage[%d]", s->init_random_occurence);
+		s->init_interval_occurence = atoi(ezxml_attr(action, "rand"));
+		log_debug(" percentage[%d]", s->init_interval_occurence);
 	} else if(strcasecmp(action_name,"loss_rtcp") == 0){
 		s->action = A_LOSS_RTCP;
-		s->init_random_occurence = atoi(ezxml_attr(action, "rand"));
-		log_debug(" percentage[%d]", s->init_random_occurence);
+		s->init_interval_occurence = atoi(ezxml_attr(action, "rand"));
+		log_debug(" percentage[%d]", s->init_interval_occurence);
 	} else {
 		s->action = A_NONE;
 	}

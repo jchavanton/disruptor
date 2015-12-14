@@ -39,6 +39,9 @@ typedef struct disrupt_packet_s {
 } disrupt_packet_t;
 
 #define JITTER_OUT_OF_ORDER (1 << 0)
+#define JITTER_FIXED_BURST_LEN (1 << 1)
+#define JITTER_FIXED_BURST_INTERVAL (1 << 2)
+
 
 struct scenario_s {
 	ezxml_t scenario_xml;
@@ -46,8 +49,9 @@ struct scenario_s {
 	enum scenario_problem_state_e pb_state; // state of the problem taking place
 	int32_t pb_pkt_pos;			// current seq id in the problem
 	int32_t pb_pkt_start;			// seq id when starting a problem
+	int32_t pb_pkt_stop;			// seq id when stoping a problem
 	int32_t pb_pkt_max;
-	int16_t init_random_occurence;		// chance of the problem taking place for each packet
+	int16_t init_interval_occurence;	// chance of the problem taking place for each packet
 	int16_t init_max_burst;			// max size of packet burst
 	int32_t *queue_delay;			// packet currently delayed are queued here
 	int32_t *queue_seq;			// sequence number of packet in the queue (when using RTP in clear)
