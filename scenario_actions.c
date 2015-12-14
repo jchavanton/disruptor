@@ -90,8 +90,8 @@ int scenario_action_jitter(struct scenario_s * s, struct disrupt_packet_s * p){
 
 	if(s->pb_state == PB_NONE) {
 		if(s->params & JITTER_FIXED_BURST_INTERVAL) {
-		//	log_debug("stream[%d]scenario_action[jitter][%d]-[%d]>=[%d]: no problem pkt_id[%d] seq[%d] period_cnt[%d]",
-                //                   p->stream->id, s->period_pkt_count, s->pb_pkt_stop, s->init_interval_occurence, p->pkt_id, p->seq , s->period_pkt_count);
+			log_debug("stream[%d]scenario_action[jitter][%d]-[%d]>=[%d]: no problem pkt_id[%d] seq[%d] period_cnt[%d]",
+                                   p->stream->id, s->period_pkt_count, s->pb_pkt_stop, s->init_interval_occurence, p->pkt_id, p->seq , s->period_pkt_count);
 			if(s->period_pkt_count - s->pb_pkt_stop >= s->init_interval_occurence)
 				var_rand = 1;
 		} else {
