@@ -23,9 +23,11 @@
 ###  action jitter ###
 
 burst_max : maximum random size of delayed burst in packets
+
 interval_max : maximum random  interval between burst in packets
 
 burst_size : size of delayed burst in packets
+
 interval_size : interval between burst in packets
 
 outoforder : burst out of order
