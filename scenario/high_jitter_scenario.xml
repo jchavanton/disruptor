@@ -1,30 +1,18 @@
 <?xml version="1.0"?>
 
-<!--
-     simulate jitter caused by "congestion" resulting in random delayed packets burst
-     action: jitter
-     rand: percentage of chances that a problem occurrence start at each packet
-     burst: burst size in packets
-     <action name="jitter" rand="50" burst="125"/>
-
-     simulate none
-     action: none
-     rand: percentage nones
--->
-
 <scenario>
-       <period duration="15"><action name="jitter" interval_size="50" burst_size="10"/></period>
-       <period duration="15"><action name="jitter" interval_size="50" burst_size="15"/></period>
-       <period duration="15"><action name="jitter" interval_size="50" burst_size="20"/></period>
-       <period duration="15"><action name="jitter" interval_size="50" burst_size="25"/></period>
-       <period duration="15"><action name="jitter" interval_size="50" burst_size="30"/></period>
-       <period duration="15"><action name="jitter" interval_size="50" burst_size="35"/></period>
-       <period duration="15"><action name="jitter" interval_size="50" burst_size="30"/></period>
-       <period duration="15"><action name="jitter" interval_size="50" burst_size="25"/></period>
-       <period duration="15"><action name="jitter" interval_size="50" burst_size="20"/></period>
-       <period duration="15"><action name="jitter" interval_size="50" burst_size="15"/></period>
-       <period duration="15"><action name="jitter" interval_size="50" burst_size="10"/></period>
-       <period duration="15"><action name="none"/></period>
+       <period duration="5"><action name="jitter" interval_size="20" burst_size="10"/></period>
+       <period duration="5"><action name="jitter" interval_size="20" burst_size="15"/></period>
+       <period duration="5"><action name="jitter" interval_size="20" burst_size="20"/></period>
+       <period duration="5"><action name="jitter" interval_size="20" burst_size="25"/></period>
+       <period duration="5"><action name="jitter" interval_size="20" burst_size="30"/></period>
+       <period duration="5"><action name="jitter" interval_size="20" burst_size="35"/></period>
+       <period duration="5"><action name="jitter" interval_size="20" burst_size="30"/></period>
+       <period duration="5"><action name="jitter" interval_size="20" burst_size="25"/></period>
+       <period duration="5"><action name="jitter" interval_size="20" burst_size="20"/></period>
+       <period duration="5"><action name="jitter" interval_size="20" burst_size="15"/></period>
+       <period duration="5"><action name="jitter" interval_size="20" burst_size="10"/></period>
+       <period duration="5"><action name="none"/></period>
        <period duration="15"><action name="none"/></period>
        <period duration="15"><action name="none"/></period>
        <period duration="15"><action name="none"/></period>

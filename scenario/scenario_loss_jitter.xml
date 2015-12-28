@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+
+<scenario>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="2"><action name="loss" rand="20"/></period>
+       <period duration="2"><action name="jitter" burst_size="10" interval_size="20"/></period>
+       <period duration="3600">
+                <action name="loss" rand="20"/>
+       </period>
+</scenario>
