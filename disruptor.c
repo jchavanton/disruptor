@@ -2,12 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <signal.h>
 #include <string.h>
 #include <libnetfilter_queue/libnetfilter_queue.h>
 #include <netinet/ip.h>
 #include <linux/tcp.h>
 #include <linux/udp.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include "include/disruptor.h"
 #include "include/disruptor_config.h"
@@ -24,6 +26,13 @@ struct disrupt_stream_s *stream_head;
 struct disrupt_stream_s *stream;
 char * scenario_filename = "scenario.xml";
 int log_level = 2;
+char time_str[20];
+
+static const char *log_fn = "/tmp/disruptor.log";
+static const char *pid_fn = "/tmp/disruptor.pid";
+static FILE *log_output = NULL;
+pid_t process_id = 0;
+pid_t sid = 0;
 
 typedef struct disrupt_nfq_s {
 	struct nfq_q_handle *qh;	/* Netfilter Queue handle */
@@ -225,9 +234,13 @@ void disruptor_nfq_handle_traffic() {
 	}
 }
 
+
+
 void disruptor_command_line_options(int argc, char **argv){
 	int opt;
-	while ((opt = getopt(argc, argv, "hl:q:f:")) != -1) {
+	FILE *pid_fh=NULL;
+	int pid;
+	while ((opt = getopt(argc, argv, "hdl:q:f:")) != -1) {
 		switch (opt) {
 			case 'l':
 				log_level =  atoi(optarg);
@@ -237,13 +250,40 @@ void disruptor_command_line_options(int argc, char **argv){
 				log_info("disruptor_command_line_options: nfq queue id[%d]", d_nfq.qid);
 				break;
 			case 'h':
-				log_info("-q nfq queue id\n-f scenario file name\n-l log level: 0=error, 1=info, 2=notice, 3=debug");
-				exit(1);
+				log_info("-d daemonize\n-q nfq queue id\n-f scenario file name\n-l log level: 0=error, 1=info, 2=notice, 3=debug");
+				exit(0);
 				break;
 			case 'f':
 			case 's':
 				scenario_filename = optarg;
 				break;
+			case 'd':
+				if(pid_fh=fopen(pid_fn, "r")){
+					log_error("can not deamonize [%s] found", pid_fn);
+					exit(1);
+				}
+				process_id = fork();
+				if (process_id > 0) {
+					log_info("daemonizing ...");
+					exit(0);
+				} else if (process_id < 0){
+					log_error("can not fork");
+					exit(1);
+				}
+				log_info("logging to %s", log_fn);
+				umask(0);
+				sid = setsid();
+				if (sid < 0)
+					exit(1);
+				//chdir("/");
+				close(STDIN_FILENO);
+				close(STDOUT_FILENO);
+				close(STDERR_FILENO);
+				pid_fh = fopen(pid_fn, "w");
+				fprintf(pid_fh, "%d\n", getpid());
+				fclose(pid_fh);
+				log_output = fopen(log_fn, "w+");
+				fflush(log_output);
 			default:
 				break;
 		}
@@ -251,55 +291,87 @@ void disruptor_command_line_options(int argc, char **argv){
 	log_info("scenario file[%s] loglevel[%d]", scenario_filename, log_level);
 }
 
-void set_logging(void){
-	fflush(stdout);
+static void signal_handler(int sig) {
+	switch(sig) {
+		case SIGINT:
+		case SIGTERM:
+			log_info("disruptor exiting...");
+			unlink(pid_fn);
+			exit(0);
+	}
+}
+
+void init_signal_handling(void){
+	signal(SIGINT, signal_handler);
+	signal(SIGTERM, signal_handler);
+}
+
+void init_logging(void){
+	log_output=stdout;
+	fflush(log_output);
+}
+
+void update_time_str(void) {
+	time_t now = time (0);
+	struct tm *gmt_tm = gmtime (&now);
+	strftime (time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", gmt_tm);
 }
 
 void log_error( const char* format, ... ) {
 	va_list args;
-	fprintf( stderr, "\e[1;31m" );
+	update_time_str();
+	fprintf( log_output, "\e[1;31m[%s] ", time_str);
 	va_start( args, format );
-	vfprintf( stderr, format, args );
+	vfprintf( log_output, format, args );
 	va_end( args );
-	fprintf( stderr, "\e[0m\n" );
+	fprintf( log_output, "\e[0m\n" );
+	fflush(log_output);
 }
+
 void log_info( const char* format, ... ) {
 	if(log_level < 1)
 		return;
 	va_list args;
-	fprintf( stdout, "\e[1;35m" );
+	update_time_str();
+	fprintf( log_output, "\e[1;35m[%s] ", time_str);
 	va_start( args, format );
-	vfprintf( stdout, format, args );
+	vfprintf( log_output, format, args );
 	va_end( args );
-	fprintf( stdout, "\e[0m\n" );
+	fprintf( log_output, "\e[0m\n" );
+	fflush(log_output);
 }
 
 void log_notice( const char* format, ... ) {
 	if(log_level < 2)
 		return;
 	va_list args;
-	fprintf( stdout, "\e[1;34m" );
+	update_time_str();
+	fprintf( log_output, "\e[1;34m[%s] ", time_str);
 	va_start( args, format );
-	vfprintf( stdout, format, args );
+	vfprintf( log_output, format, args );
 	va_end( args );
-	fprintf( stdout, "\e[0m\n" );
+	fprintf( log_output, "\e[0m\n" );
+	fflush(log_output);
 }
 
 void log_debug( const char* format, ... ) {
 	if(log_level < 3)
 		return;
 	va_list args;
-	fprintf( stdout, "\e[1;37m" );
+	update_time_str();
+	fprintf( log_output, "\e[1;37m[%s] ", time_str);
 	va_start( args, format );
-	vfprintf( stdout, format, args );
+	vfprintf( log_output, format, args );
 	va_end( args );
-	fprintf( stdout, "\e[0m\n" );
+	fprintf( log_output, "\e[0m\n" );
+	fflush(log_output);
 }
 
 
 void main(int argc, char **argv){
-	set_logging();
+	init_logging();
 	disruptor_command_line_options(argc, argv);
+	init_signal_handling();
 	disruptor_nfq_init();
 	disruptor_nfq_bind();
 	//stream->scenario.qh = d_nfq.qh;
