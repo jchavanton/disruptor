@@ -19,6 +19,7 @@
 ### start the disruptor
 ```
 ./disruptor -h
+-d daemonize
 -q nfq queue id
 -f scenario file name
 -l log level: 0=error, 1=info, 2=notice, 3=debug
