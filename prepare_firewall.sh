@@ -1,6 +1,6 @@
 #!/bin/bash
 
-REMOTE_HOSTNAME="preprod.voip.lifeisbetteron.com"
+REMOTE_HOSTNAME=$1
 NF_Q=10
 
 WAN_IP="`ifconfig wlan0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://'`"

@@ -1,5 +1,5 @@
-# disruptor
- generating problems on RTP streams : latency, delay, jitter
+# Disruptor
+ Network impairment server (generating problems on RTP streams : latency, delay, jitter)
  
  This tool can be used anywhere with netfilter and iptables.
  This is can be very handy when you need to test how an RTP application behaves when facing problems, using scenarios the same problems can be reproduced many times.
@@ -14,8 +14,9 @@
 ### configure firewall
  This script will ouput examples of iptables command to pass traffic to the disruptor using netfilter queues
  ```
- ./prepare_firewall.sh
+ ./prepare_firewall.sh server.domain.com
  ```
+ You may have to edit the script if your interfaces names are not `wlan0` and/or `eth0`
 ### start the disruptor
 ```
 ./disruptor -h
