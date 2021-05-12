@@ -21,6 +21,7 @@
 #include <inttypes.h>
 #include "include/scenario.h"
 #include "include/disruptor.h"
+#include "include/stream.h"
 
 struct disrupt_stream_s * stream_get(struct disrupt_stream_s * stream, uint32_t src_ip, uint16_t src_port, uint32_t dst_ip, uint16_t dst_port){
 	while(stream != NULL){

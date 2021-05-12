@@ -22,7 +22,7 @@
 #define STREAM_FILE_H
 
 #include "scenario.h"
-
-
+#include <arpa/inet.h>
+// void stream_print(struct disrupt_stream_s * stream);
 
 #endif

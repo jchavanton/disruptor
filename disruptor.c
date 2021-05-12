@@ -21,9 +21,9 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <signal.h>
 #include <string.h>
+#include <stdint.h>
 #include <libnetfilter_queue/libnetfilter_queue.h>
 #include <netinet/ip.h>
 #include <linux/tcp.h>

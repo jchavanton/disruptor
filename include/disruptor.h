@@ -20,7 +20,8 @@
 
 #ifndef DISRUPTOR_FILE_H
 #define DISRUPTOR_FILE_H
-
+#include <sys/types.h>
+#include <sys/stat.h>
 void log_error( const char* format, ... );
 void log_debug( const char* format, ... );
 void log_notice( const char* format, ... );

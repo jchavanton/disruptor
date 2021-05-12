@@ -21,12 +21,12 @@
 #ifndef SCENARIO_FILE_H
 #define SCENARIO_FILE_H
 
+#include <strings.h>
+#include <stdint.h>
 #include <libnetfilter_queue/libnetfilter_queue.h>
 #include <stdbool.h>
 #include "../ezxml/ezxml.h"
 #include "stream.h"
-#include <stdint.h>
-
 
 static const int32_t q_max_pkt = 10000; // max packet queue size for the scenario
 
@@ -60,7 +60,6 @@ typedef struct disrupt_packet_s {
 #define JITTER_OUT_OF_ORDER (1 << 0)
 #define JITTER_FIXED_BURST_LEN (1 << 1)
 #define JITTER_FIXED_BURST_INTERVAL (1 << 2)
-
 
 struct scenario_s {
 	ezxml_t scenario_xml;
@@ -105,6 +104,7 @@ struct disrupt_stream_s {
 
 struct disrupt_stream_s * stream_get(struct disrupt_stream_s * stream_head, uint32_t src_ip, uint16_t src_port, uint32_t dst_ip, uint16_t dst_port);
 struct disrupt_stream_s * stream_add(struct disrupt_stream_s * stream_head, uint32_t src_ip, uint16_t src_port, uint32_t dst_ip, uint16_t dst_port);
+void stream_print(struct disrupt_stream_s * stream);
 
 /* initialize the scenario */
 void scenario_init(struct scenario_s *);

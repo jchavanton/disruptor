@@ -5,18 +5,20 @@
  This is can be very handy when you need to test how an RTP application behaves when facing problems, using scenarios the same problems can be reproduced many times.
  
 ### install
- ```
- apt-get install  build-essential
- apt-get install libnetfilter-queue-dev
- ./configure
- make
- ```
+```
+apt-get update
+apt-get install build-essential libnetfilter-queue-dev
+./configure
+make
+```
+
 ### configure firewall
- This script will ouput examples of iptables command to pass traffic to the disruptor using netfilter queues
- ```
- ./prepare_firewall.sh server.domain.com
- ```
- You may have to edit the script if your interfaces names are not `wlan0` and/or `eth0`
+This script will ouput examples of iptables command to pass traffic to the disruptor using netfilter queues
+```
+./prepare_firewall.sh server.domain.com
+```
+You may have to edit the script if your interfaces names are not `wlan0` and/or `eth0`
+
 ### start the disruptor
 ```
 ./disruptor -h
@@ -25,6 +27,7 @@
 -f scenario file name
 -l log level: 0=error, 1=info, 2=notice, 3=debug
 ```
+
 ### XML scenario files example ###
 ```
 <?xml version="1.0"?>
@@ -33,6 +36,7 @@
        <period duration="5"><action name="loss" rand="10"/></period>
 </scenario>
 ```
+
 ####  action: jitter ####
 ```
 burst_max : maximum random size of delayed burst in packets
@@ -41,6 +45,7 @@ burst_size : size of delayed burst in packets
 interval_size : interval between burst in packets
 outoforder : burst out of order
 ```
+
 #### action: loss ####
 ```
 rand : percentage of losses to apply on the stream
