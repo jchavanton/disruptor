@@ -19,6 +19,7 @@
  */
 
 #include <inttypes.h>
+#include <string.h>
 #include "include/scenario.h"
 #include "include/disruptor.h"
 #include "include/stream.h"
@@ -38,6 +39,7 @@ struct disrupt_stream_s * stream_get(struct disrupt_stream_s * stream, uint32_t 
 struct disrupt_stream_s * stream_add(struct disrupt_stream_s * stream, uint32_t src_ip, uint16_t src_port, uint32_t dst_ip, uint16_t dst_port){
 	struct disrupt_stream_s * stream_new;
 	stream_new = (struct disrupt_stream_s *) malloc(sizeof(struct disrupt_stream_s));
+	memset(stream_new, 0, sizeof(struct disrupt_stream_s));
 	if(!stream_new){
 		log_error("stream_add: can not allocate memory\n");
 		return NULL;
