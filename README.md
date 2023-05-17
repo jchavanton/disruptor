@@ -28,6 +28,15 @@ You may have to edit the script if your interfaces names are not `wlan0` and/or 
 -l log level: 0=error, 1=info, 2=notice, 3=debug
 ```
 
+### Examples
+```
+./prepare_firewall.sh webrtc.server.com 10.0.0.243
+# execute the returned iptable commands
+sudo OUTPUT -d 54.13.17.12 -p all -j NFQUEUE --queue-num 10
+# run the disruptor
+sudo ./disruptor -f scenario.xml -l 3
+```
+
 ### XML scenario files example ###
 ```
 <?xml version="1.0"?>
