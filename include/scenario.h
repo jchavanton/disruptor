@@ -30,13 +30,13 @@
 
 static const int32_t q_max_pkt = 10000; // max packet queue size for the scenario
 
-enum scenario_action_e {
+typedef enum scenario_action_e {
 	A_NONE,
 	A_JITTER,
 	A_LOSS,
 	A_BURST_LOSS,
 	A_LOSS_RTCP
-};
+} scenario_action_t;
 
 enum scenario_problem_state_e {
 	PB_NONE,

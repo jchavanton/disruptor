@@ -29,6 +29,20 @@
 
 #include "include/disruptor.h"
 
+static const char* scenario_action_to_string(scenario_action_t a) {
+	if (a == A_NONE) {
+		return "none";
+	} else if(a = A_JITTER) {
+		return "jitter";
+	} else if(a = A_LOSS) {
+		return "loss";
+	} else if(a = A_BURST_LOSS) {
+		return "burst_loss";
+	} else if(a = A_LOSS_RTCP) {
+		return "loss_rtcp";
+	}
+	return "none";
+};
 
 void scenario_init(struct scenario_s *s){
 	if(!s->queue_seq){
@@ -166,8 +180,8 @@ int scenario_check_pkt(struct scenario_s * s, struct disrupt_packet_s * packet, 
 			s->scenario_action(s, packet);
 		}
 
-		log_notice("scenario period completed [%ds]to[%ds] stream[%d] action[%d]loss[%d%%]delayed[%d]received[%d]bytes[%d] bandwidth[%dKbps]",
-                        s->period_start, stream_duration, stream_id, s->action,
+		log_notice("scenario period completed [%ds]to[%ds] stream[%d] action[%s]loss[%d%%]delayed[%d]received[%d]bytes[%d] bandwidth[%dKbps]",
+                        s->period_start, stream_duration, stream_id, scenario_action_to_string(s->action),
                         s->period_pkt_loss*100/s->period_pkt_count,
                         s->period_pkt_delayed,
                         s->period_pkt_count,
