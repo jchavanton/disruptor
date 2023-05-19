@@ -101,33 +101,29 @@ int disrupt_udp_packet_analysis(char * payload_transport, int32_t pkt_id){
 
 	/* RTP DETECTION */
 
-	if( (ntohs(udp_hdr->source) % 2) ){
-		rtcp_msg_t * rtcp_msg = (rtcp_msg_t *) payload_app;
-		if(rtcp_msg->header.pt == 200 || rtcp_msg->header.pt == 201){
-			packet.rtcp = true;
-			packet.rtp=false;
-			packet.ssrc = rtcp_msg->header.ssrc;
-			log_debug("RTCP packet [%d]", rtcp_msg->header.pt);
-		} else {
-			log_debug("non RTCP packet received [%d]", rtcp_msg->header.pt);
-			return true;
-		}
-	} else {
-		rtp_msg_t * rtp_msg = (rtp_msg_t *) payload_app;
-		if(rtp_msg->header.version != 2){
-			log_debug("non RTP packet received [%d]", rtp_msg->header.version);
-			return true;
-		}
-		packet.pt = rtp_msg->header.pt;
-		packet.seq = ntohs(rtp_msg->header.seq);
-		packet.ssrc = ntohl(rtp_msg->header.ssrc);
-		packet.ts = ntohl(rtp_msg->header.ts);
-		packet.rtp = true;
-		packet.rtcp = false;
-		if(packet.seq%100 == 0){
-		log_debug("RTP version[%d] pt[%d] seq[%d] ts[%d] ssrc[%#x] B[%d]",
+	// RTCP
+	rtcp_msg_t * rtcp_msg = (rtcp_msg_t *) payload_app;
+	if(rtcp_msg->header.pt == 200 || rtcp_msg->header.pt == 201){
+		packet.rtcp = true;
+		packet.rtp=false;
+		packet.ssrc = rtcp_msg->header.ssrc;
+		log_debug("RTCP packet [%d]", rtcp_msg->header.pt);
+	}
+	// RTP/SRTP
+	rtp_msg_t * rtp_msg = (rtp_msg_t *) payload_app;
+	if(rtp_msg->header.version != 2){
+		log_debug("non RTP packet received [%d]", rtp_msg->header.version);
+		return true;
+	}
+	packet.pt = rtp_msg->header.pt;
+	packet.seq = ntohs(rtp_msg->header.seq);
+	packet.ssrc = ntohl(rtp_msg->header.ssrc);
+	packet.ts = ntohl(rtp_msg->header.ts);
+	packet.rtp = true;
+	packet.rtcp = false;
+	if(packet.seq%100 == 0){
+	log_debug("RTP version[%d] pt[%d] seq[%d] ts[%d] ssrc[%#x] B[%d]",
                                   packet.pt, rtp_msg->header.version, packet.seq, packet.ts, packet.ssrc, packet.size);
-		}
 	}
 	packet.pkt_id = pkt_id;
 
